@@ -1,0 +1,10 @@
+{
+  "name": "Shikaar — Cold Storage",
+  "short_name": "Shikaar",
+  "description": "Wild-game & fish freezer hub with species-aware shelf life and AI meal planning.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#13171b",
+  "theme_color": "#13171b",
+  "icons": []
+}

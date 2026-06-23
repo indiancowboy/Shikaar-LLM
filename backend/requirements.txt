@@ -1,0 +1,28 @@
+# Core API Framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# AI/ML Services
+openai==1.54.0
+pinecone-client==5.0.1
+
+# Data Processing
+pydantic==2.9.0
+python-multipart==0.0.12
+pyyaml==6.0.2
+
+# Environment & Configuration
+python-dotenv==1.0.1
+
+# Text Processing
+markdown==3.7
+tiktoken==0.8.0
+
+# HTTP & Async
+httpx==0.27.2
+aiofiles==24.1.0
+
+# Development & Testing
+pytest==8.3.3
+pytest-asyncio==0.24.0
+black==24.10.0

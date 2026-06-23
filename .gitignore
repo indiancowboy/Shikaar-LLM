@@ -205,3 +205,14 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# local env backups (may contain secrets)
+.env.save
+*.env.save
+
+# macOS junk
+.DS_Store
+
+# re-include the Next.js lib dir (root has a Python "lib/" rule)
+!frontend/lib/
+!frontend/lib/**
