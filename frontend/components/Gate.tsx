@@ -38,7 +38,10 @@ export default function Gate({ children }: { children: React.ReactNode }) {
   if (state === "checking") {
     return (
       <div className="wrap">
-        <p className="calm" style={{ marginTop: 40 }}>Checking access…</p>
+        <p className="calm" style={{ marginTop: 40 }}>
+          <span className="spinner" /> Connecting… first load can take ~30s while the
+          server wakes up.
+        </p>
       </div>
     );
   }

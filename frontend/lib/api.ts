@@ -16,11 +16,43 @@ const BASE =
 
 const ACCESS_KEY_STORAGE = "shikaar_key";
 
+// Free-tier hosts (Render) sleep when idle and take ~30-60s to wake, returning
+// network errors or 502/503/504 during boot. Retry those transparently so a
+// cold start looks like a slightly slow load instead of a "can't reach" error.
+const TRANSIENT = new Set([502, 503, 504]);
+const RETRIES = 8;
+const RETRY_DELAY_MS = 3000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 // Shared-password header (typed by the user, stored locally — never in the bundle).
 function authHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
   const k = window.localStorage.getItem(ACCESS_KEY_STORAGE);
   return k ? { "X-Access-Password": k } : {};
+}
+
+async function rawFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = { ...(init.headers || {}), ...authHeaders() };
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= RETRIES; attempt++) {
+    try {
+      const res = await fetch(`${BASE}${path}`, { ...init, headers });
+      if (TRANSIENT.has(res.status) && attempt < RETRIES) {
+        await sleep(RETRY_DELAY_MS);
+        continue;
+      }
+      return res;
+    } catch (e) {
+      // network error (incl. cold-start connection drop) — retry
+      lastErr = e;
+      if (attempt < RETRIES) {
+        await sleep(RETRY_DELAY_MS);
+        continue;
+      }
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("network error");
 }
 
 async function asJson<T>(res: Response): Promise<T> {
@@ -42,13 +74,11 @@ const jsonHeaders = { "Content-Type": "application/json" };
 export const api = {
   // --- access gate ---
   checkAccess: async (): Promise<void> => {
-    const r = await fetch(`${BASE}/auth/check`, { headers: authHeaders() });
+    const r = await rawFetch("/auth/check");
     if (!r.ok) throw new Error(String(r.status));
   },
   setAccessKey: async (key: string): Promise<void> => {
-    const r = await fetch(`${BASE}/auth/check`, {
-      headers: { "X-Access-Password": key },
-    });
+    const r = await rawFetch("/auth/check", { headers: { "X-Access-Password": key } });
     if (!r.ok) throw new Error("invalid");
     if (typeof window !== "undefined") {
       window.localStorage.setItem(ACCESS_KEY_STORAGE, key);
@@ -56,56 +86,48 @@ export const api = {
   },
 
   // --- inventory + features ---
-  list: () => fetch(`${BASE}/freezer`, { headers: authHeaders() }).then(asJson<FreezerItemRead[]>),
+  list: () => rawFetch("/freezer").then(asJson<FreezerItemRead[]>),
 
   add: (item: FreezerItemCreate) =>
-    fetch(`${BASE}/freezer`, {
+    rawFetch("/freezer", {
       method: "POST",
-      headers: { ...jsonHeaders, ...authHeaders() },
+      headers: jsonHeaders,
       body: JSON.stringify(item),
     }).then(asJson<FreezerItemRead>),
 
   remove: async (id: string) => {
-    const res = await fetch(`${BASE}/freezer/${id}`, {
-      method: "DELETE",
-      headers: authHeaders(),
-    });
+    const res = await rawFetch(`/freezer/${id}`, { method: "DELETE" });
     if (!res.ok && res.status !== 204) throw new Error(`delete failed: ${res.status}`);
   },
 
   parseText: (text: string) =>
-    fetch(`${BASE}/freezer/parse`, {
+    rawFetch("/freezer/parse", {
       method: "POST",
-      headers: { ...jsonHeaders, ...authHeaders() },
+      headers: jsonHeaders,
       body: JSON.stringify({ text }),
     }).then(asJson<CandidatesResponse>),
 
   parseImage: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
-    return fetch(`${BASE}/freezer/parse-image`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: fd,
-    }).then(asJson<CandidatesResponse>);
+    return rawFetch("/freezer/parse-image", { method: "POST", body: fd }).then(
+      asJson<CandidatesResponse>,
+    );
   },
 
   estimateYield: (species: string, weight: number, dressed: boolean) =>
-    fetch(`${BASE}/freezer/estimate-yield`, {
+    rawFetch("/freezer/estimate-yield", {
       method: "POST",
-      headers: { ...jsonHeaders, ...authHeaders() },
+      headers: jsonHeaders,
       body: JSON.stringify({ species, weight, dressed }),
     }).then(asJson<YieldResponse>),
 
-  cookFirst: () =>
-    fetch(`${BASE}/freezer/cook-first`, { headers: authHeaders() }).then(
-      asJson<CookFirstResponse>,
-    ),
+  cookFirst: () => rawFetch("/freezer/cook-first").then(asJson<CookFirstResponse>),
 
   mealPlan: (query?: string) =>
-    fetch(`${BASE}/freezer/meal-plan`, {
+    rawFetch("/freezer/meal-plan", {
       method: "POST",
-      headers: { ...jsonHeaders, ...authHeaders() },
+      headers: jsonHeaders,
       body: JSON.stringify({ query: query ?? null }),
     }).then(asJson<MealPlanResponse>),
 };
