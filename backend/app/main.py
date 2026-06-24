@@ -10,6 +10,7 @@ from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from .rag import generation, retrieval
@@ -27,6 +28,12 @@ app.add_middleware(
 
 
 app.include_router(freezer.router)
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    """The bare root has no API; send curious browsers to the docs."""
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")
