@@ -9,6 +9,16 @@ import { api } from "@/lib/api";
 import type { CookFirstResponse, FreezerItemRead } from "@/lib/types";
 
 export default function Page() {
+  // Gate renders FreezerHub only after access is granted, so the data fetch
+  // never runs (and never 401s) before the password is accepted.
+  return (
+    <Gate>
+      <FreezerHub />
+    </Gate>
+  );
+}
+
+function FreezerHub() {
   const [items, setItems] = useState<FreezerItemRead[]>([]);
   const [cookFirst, setCookFirst] = useState<CookFirstResponse | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
@@ -38,7 +48,6 @@ export default function Page() {
   };
 
   return (
-    <Gate>
     <div className="wrap">
       <header className="brand">
         <div>
@@ -66,6 +75,5 @@ export default function Page() {
         Shelf-life estimates are guidance, not gospel — trust your nose.
       </footer>
     </div>
-    </Gate>
   );
 }
