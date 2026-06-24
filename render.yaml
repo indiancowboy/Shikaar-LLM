@@ -1,0 +1,23 @@
+# Render blueprint for the Shikaar FastAPI backend.
+# In Render: New > Blueprint, point at this repo. Then set the secret env vars
+# (marked sync:false) in the dashboard. Free plan sleeps when idle (cold start
+# ~30s) and its disk is ephemeral — fine for a demo; inventory resets on restart.
+services:
+  - type: web
+    name: shikaar-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_HOST
+        sync: false
+      - key: SHIKAAR_ACCESS_PASSWORD
+        sync: false

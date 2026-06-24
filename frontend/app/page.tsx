@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AddToFreezer from "@/components/AddToFreezer";
 import AskShikaar from "@/components/AskShikaar";
+import Gate from "@/components/Gate";
 import { CookFirst, InventoryList, StatStrip } from "@/components/Inventory";
 import { api } from "@/lib/api";
 import type { CookFirstResponse, FreezerItemRead } from "@/lib/types";
@@ -37,6 +38,7 @@ export default function Page() {
   };
 
   return (
+    <Gate>
     <div className="wrap">
       <header className="brand">
         <div>
@@ -64,5 +66,6 @@ export default function Page() {
         Shelf-life estimates are guidance, not gospel — trust your nose.
       </footer>
     </div>
+    </Gate>
   );
 }
