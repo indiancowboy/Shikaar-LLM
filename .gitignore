@@ -216,3 +216,6 @@ __marimo__/
 # re-include the Next.js lib dir (root has a Python "lib/" rule)
 !frontend/lib/
 !frontend/lib/**
+
+# local sqlite db
+backend/data/
