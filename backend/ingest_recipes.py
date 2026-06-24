@@ -129,9 +129,9 @@ def ingest_recipes():
         processed_count += 1
         print(f"  ✓ Successfully uploaded ({processed_count}/{len(recipe_files)})")
 
-        print(f"\n{'='*50}")
-        print(f"Ingestion complete! Processed {processed_count} recipes.")
-        print(f"{'='*50}")
+    print(f"\n{'='*50}")
+    print(f"Ingestion complete! Processed {processed_count} recipes.")
+    print(f"{'='*50}")
 
 # This runs only when you execute this file directly
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from .rag import generation, retrieval
-from .routers import freezer
+from .routers import fish, freezer
 
 app = FastAPI(title="Shikaar API", version="0.1.0")
 
@@ -28,6 +28,7 @@ app.add_middleware(
 
 
 app.include_router(freezer.router)
+app.include_router(fish.router)
 
 
 @app.get("/", include_in_schema=False)

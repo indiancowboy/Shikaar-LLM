@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "description": "Curated fish-species reference for Shikaar. FishBase-style fields (scientific name, family, max length, habitat); the lean/oily `category` is Shikaar's own shelf-life classification, NOT a FishBase field. Refresh the FishBase-sourced facts with backend/fetch_fishbase.py when the rOpenSci API is reachable.",
+    "source": "Curated; enrichable from FishBase (fishbase.ropensci.org)"
+  },
+  "species": [
+    { "key": "redfish", "common_name": "Red drum", "aka": ["redfish", "red drum", "channel bass"], "scientific_name": "Sciaenops ocellatus", "family": "Sciaenidae", "max_length_cm": 155, "habitat": "Inshore / estuarine, Western Atlantic & Gulf of Mexico", "category": "fishlean" },
+    { "key": "catfish", "common_name": "Channel catfish", "aka": ["catfish", "channel cat"], "scientific_name": "Ictalurus punctatus", "family": "Ictaluridae", "max_length_cm": 132, "habitat": "Freshwater rivers, lakes, reservoirs", "category": "fishlean" },
+    { "key": "bass", "common_name": "Largemouth bass", "aka": ["bass", "largemouth", "largemouth bass"], "scientific_name": "Micropterus salmoides", "family": "Centrarchidae", "max_length_cm": 97, "habitat": "Freshwater lakes and slow rivers", "category": "fishlean" },
+    { "key": "walleye", "common_name": "Walleye", "aka": ["walleye", "pickerel"], "scientific_name": "Sander vitreus", "family": "Percidae", "max_length_cm": 107, "habitat": "Freshwater lakes and rivers, North America", "category": "fishlean" },
+    { "key": "snapper", "common_name": "Red snapper", "aka": ["snapper", "red snapper"], "scientific_name": "Lutjanus campechanus", "family": "Lutjanidae", "max_length_cm": 100, "habitat": "Reefs and hard bottom, Gulf of Mexico & SE Atlantic", "category": "fishlean" },
+    { "key": "lingcod", "common_name": "Lingcod", "aka": ["lingcod", "ling cod"], "scientific_name": "Ophiodon elongatus", "family": "Hexagrammidae", "max_length_cm": 152, "habitat": "Rocky demersal reefs, NE Pacific", "category": "fishlean" },
+    { "key": "rockfish", "common_name": "Rockfish", "aka": ["rockfish", "rock cod", "sebastes"], "scientific_name": "Sebastes spp.", "family": "Sebastidae", "max_length_cm": 100, "habitat": "Rocky reefs, NE Pacific", "category": "fishlean" },
+    { "key": "halibut", "common_name": "Pacific halibut", "aka": ["halibut", "pacific halibut"], "scientific_name": "Hippoglossus stenolepis", "family": "Pleuronectidae", "max_length_cm": 258, "habitat": "Demersal, North Pacific", "category": "fishlean" },
+    { "key": "salmon", "common_name": "Chinook salmon", "aka": ["salmon", "king salmon", "chinook"], "scientific_name": "Oncorhynchus tshawytscha", "family": "Salmonidae", "max_length_cm": 150, "habitat": "Anadromous, North Pacific & coastal rivers", "category": "fishoily" },
+    { "key": "trout", "common_name": "Rainbow trout", "aka": ["trout", "rainbow trout", "steelhead"], "scientific_name": "Oncorhynchus mykiss", "family": "Salmonidae", "max_length_cm": 120, "habitat": "Cold freshwater streams and lakes", "category": "fishoily" },
+    { "key": "mackerel", "common_name": "Atlantic mackerel", "aka": ["mackerel", "atlantic mackerel"], "scientific_name": "Scomber scombrus", "family": "Scombridae", "max_length_cm": 60, "habitat": "Pelagic, North Atlantic", "category": "fishoily" },
+    { "key": "yellowtail", "common_name": "Yellowtail amberjack", "aka": ["yellowtail", "hamachi", "amberjack"], "scientific_name": "Seriola lalandi", "family": "Carangidae", "max_length_cm": 250, "habitat": "Pelagic coastal, Pacific", "category": "fishoily" },
+    { "key": "bluefin_tuna", "common_name": "Atlantic bluefin tuna", "aka": ["bluefin", "bluefin tuna", "tuna"], "scientific_name": "Thunnus thynnus", "family": "Scombridae", "max_length_cm": 458, "habitat": "Pelagic, Atlantic & Mediterranean", "category": "fishoily" },
+    { "key": "yellowfin_tuna", "common_name": "Yellowfin tuna", "aka": ["yellowfin", "yellowfin tuna", "ahi", "tuna"], "scientific_name": "Thunnus albacares", "family": "Scombridae", "max_length_cm": 239, "habitat": "Pelagic, tropical & subtropical oceans", "category": "fishoily" }
+  ]
+}
