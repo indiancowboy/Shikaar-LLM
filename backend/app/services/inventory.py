@@ -1,13 +1,13 @@
-"""Inventory store — SQLite-backed (build brief §10, §12).
+"""Inventory store — SQLite-backed, scoped per client (build brief §10, §12).
 
-Durable across restarts (the in-memory MVP lost everything on reload). Uses the
-Python stdlib `sqlite3` — no new dependency — and is the brief's stated Phase-2
-DB target. The module interface (create/list/get/update/delete/clear) is
-unchanged, so routers/services don't care that storage moved under them.
+Each browser sends an `X-Client-Id` header (see app/security.py get_client_id);
+every row is tagged with it and all reads/writes are filtered by it, so testers
+get private freezers without accounts. Requests with no client id fall into a
+shared "shared" bucket.
 
-DB path: env `SHIKAAR_DB`, else `backend/data/shikaar.db`. A fresh connection
-per call (with CREATE TABLE IF NOT EXISTS) keeps it thread-safe under FastAPI and
-lets tests point at an isolated temp DB via the env var.
+Durable across restarts (stdlib sqlite3). DB path: env `SHIKAAR_DB`, else
+`backend/data/shikaar.db`. Fresh connection per call keeps it thread-safe under
+FastAPI and lets tests point at an isolated temp DB.
 """
 from __future__ import annotations
 
@@ -19,12 +19,12 @@ from typing import Iterator, Optional
 
 from ..models import FreezerItem, FreezerItemCreate
 
-# backend/data/shikaar.db (this file is backend/app/services/inventory.py)
 _DEFAULT_DB = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "shikaar.db"
 )
 
-_COLUMNS = (
+# FreezerItem fields (client_id is stored alongside but is not a model field).
+_ITEM_COLUMNS = (
     "id", "species", "category", "cut", "qty", "unit", "storage",
     "date_frozen", "harvest_location", "notes",
 )
@@ -43,11 +43,15 @@ def _conn() -> Iterator[sqlite3.Connection]:
     try:
         con.execute(
             """CREATE TABLE IF NOT EXISTS freezer_items (
-                id TEXT PRIMARY KEY, species TEXT, category TEXT, cut TEXT,
-                qty REAL, unit TEXT, storage TEXT, date_frozen TEXT,
+                id TEXT PRIMARY KEY, client_id TEXT, species TEXT, category TEXT,
+                cut TEXT, qty REAL, unit TEXT, storage TEXT, date_frozen TEXT,
                 harvest_location TEXT, notes TEXT
             )"""
         )
+        # Migrate older DBs that predate the client_id column.
+        cols = [r[1] for r in con.execute("PRAGMA table_info(freezer_items)")]
+        if "client_id" not in cols:
+            con.execute("ALTER TABLE freezer_items ADD COLUMN client_id TEXT")
         yield con
         con.commit()
     finally:
@@ -59,64 +63,74 @@ def _new_id() -> str:
 
 
 def _row_to_item(r: sqlite3.Row) -> FreezerItem:
-    # Pydantic parses the ISO date string back into a date.
-    return FreezerItem(**{k: r[k] for k in _COLUMNS})
+    return FreezerItem(**{k: r[k] for k in _ITEM_COLUMNS})
 
 
-def _insert(con: sqlite3.Connection, item: FreezerItem) -> None:
+def _insert(con: sqlite3.Connection, item: FreezerItem, client_id: str) -> None:
     con.execute(
-        f"INSERT OR REPLACE INTO freezer_items ({','.join(_COLUMNS)}) "
-        f"VALUES ({','.join('?' * len(_COLUMNS))})",
+        f"INSERT OR REPLACE INTO freezer_items (client_id,{','.join(_ITEM_COLUMNS)}) "
+        f"VALUES ({','.join('?' * (len(_ITEM_COLUMNS) + 1))})",
         (
-            item.id, item.species, item.category, item.cut, item.qty, item.unit,
-            item.storage, item.date_frozen.isoformat(), item.harvest_location, item.notes,
+            client_id, item.id, item.species, item.category, item.cut, item.qty,
+            item.unit, item.storage, item.date_frozen.isoformat(),
+            item.harvest_location, item.notes,
         ),
     )
 
 
-def create(data: FreezerItemCreate) -> FreezerItem:
+def create(data: FreezerItemCreate, client_id: str) -> FreezerItem:
     item = FreezerItem(id=_new_id(), **data.model_dump())
     with _conn() as con:
-        _insert(con, item)
+        _insert(con, item, client_id)
     return item
 
 
-def create_many(items: list[FreezerItemCreate]) -> list[FreezerItem]:
-    return [create(i) for i in items]
+def create_many(items: list[FreezerItemCreate], client_id: str) -> list[FreezerItem]:
+    return [create(i, client_id) for i in items]
 
 
-def list_items() -> list[FreezerItem]:
+def list_items(client_id: str) -> list[FreezerItem]:
     with _conn() as con:
-        rows = con.execute("SELECT * FROM freezer_items").fetchall()
+        rows = con.execute(
+            "SELECT * FROM freezer_items WHERE client_id = ?", (client_id,)
+        ).fetchall()
     return [_row_to_item(r) for r in rows]
 
 
-def get(item_id: str) -> Optional[FreezerItem]:
+def get(item_id: str, client_id: str) -> Optional[FreezerItem]:
     with _conn() as con:
         row = con.execute(
-            "SELECT * FROM freezer_items WHERE id = ?", (item_id,)
+            "SELECT * FROM freezer_items WHERE id = ? AND client_id = ?",
+            (item_id, client_id),
         ).fetchone()
     return _row_to_item(row) if row else None
 
 
-def update(item_id: str, patch: dict) -> Optional[FreezerItem]:
-    """Merge `patch` (validated, unset-excluded) and re-validate before saving."""
-    current = get(item_id)
+def update(item_id: str, patch: dict, client_id: str) -> Optional[FreezerItem]:
+    """Merge `patch` (validated, unset-excluded) and re-validate. Scoped to the
+    owner so one client can't edit another's items."""
+    current = get(item_id, client_id)
     if current is None:
         return None
     item = FreezerItem(**{**current.model_dump(), **patch})  # raises on invalid merge
     with _conn() as con:
-        _insert(con, item)
+        _insert(con, item, client_id)
     return item
 
 
-def delete(item_id: str) -> bool:
+def delete(item_id: str, client_id: str) -> bool:
     with _conn() as con:
-        cur = con.execute("DELETE FROM freezer_items WHERE id = ?", (item_id,))
+        cur = con.execute(
+            "DELETE FROM freezer_items WHERE id = ? AND client_id = ?",
+            (item_id, client_id),
+        )
         return cur.rowcount > 0
 
 
-def clear() -> None:
-    """Test helper / reset — wipe all rows in the current DB."""
+def clear(client_id: Optional[str] = None) -> None:
+    """Test helper / reset. Clears one client's rows, or all if client_id is None."""
     with _conn() as con:
-        con.execute("DELETE FROM freezer_items")
+        if client_id is None:
+            con.execute("DELETE FROM freezer_items")
+        else:
+            con.execute("DELETE FROM freezer_items WHERE client_id = ?", (client_id,))

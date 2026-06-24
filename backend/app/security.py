@@ -22,3 +22,9 @@ def require_access(x_access_password: Optional[str] = Header(default=None)) -> N
         return  # gate disabled
     if x_access_password != expected:
         raise HTTPException(status_code=401, detail="invalid or missing access password")
+
+
+def get_client_id(x_client_id: Optional[str] = Header(default=None)) -> str:
+    """Per-browser identity (sent as the X-Client-Id header) used to scope each
+    tester's freezer. Requests without it share a single "shared" bucket."""
+    return (x_client_id or "").strip() or "shared"

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from ..domain import yield_profiles
@@ -19,6 +19,7 @@ from ..models import (
     FreezerItemUpdate,
     ParseCandidate,
 )
+from ..security import get_client_id
 from ..services import cook_first as cook_first_svc
 from ..services import freezer_image, freezer_parse, inventory
 from ..services import meal_plan as meal_plan_svc
@@ -28,19 +29,21 @@ router = APIRouter(prefix="/freezer", tags=["freezer"])
 
 # ---------------------------------------------------------------- CRUD --------
 @router.get("", response_model=list[FreezerItemRead])
-def list_freezer() -> list[FreezerItemRead]:
-    return [it.with_status() for it in inventory.list_items()]
+def list_freezer(client_id: str = Depends(get_client_id)) -> list[FreezerItemRead]:
+    return [it.with_status() for it in inventory.list_items(client_id)]
 
 
 @router.post("", response_model=FreezerItemRead, status_code=201)
-def add_freezer(item: FreezerItemCreate) -> FreezerItemRead:
-    return inventory.create(item).with_status()
+def add_freezer(item: FreezerItemCreate, client_id: str = Depends(get_client_id)) -> FreezerItemRead:
+    return inventory.create(item, client_id).with_status()
 
 
 @router.patch("/{item_id}", response_model=FreezerItemRead)
-def edit_freezer(item_id: str, patch: FreezerItemUpdate) -> FreezerItemRead:
+def edit_freezer(
+    item_id: str, patch: FreezerItemUpdate, client_id: str = Depends(get_client_id)
+) -> FreezerItemRead:
     try:
-        updated = inventory.update(item_id, patch.model_dump(exclude_unset=True))
+        updated = inventory.update(item_id, patch.model_dump(exclude_unset=True), client_id)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     if updated is None:
@@ -49,8 +52,8 @@ def edit_freezer(item_id: str, patch: FreezerItemUpdate) -> FreezerItemRead:
 
 
 @router.delete("/{item_id}", status_code=204, response_model=None)
-def remove_freezer(item_id: str):
-    if not inventory.delete(item_id):
+def remove_freezer(item_id: str, client_id: str = Depends(get_client_id)):
+    if not inventory.delete(item_id, client_id):
         raise HTTPException(status_code=404, detail="item not found")
 
 
@@ -112,8 +115,8 @@ def estimate_yield(req: YieldRequest) -> YieldResponse:
 
 # --------------------------------------------------------- cook / plan --------
 @router.get("/cook-first")
-def cook_first() -> dict:
-    return cook_first_svc.cook_first(inventory.list_items())
+def cook_first(client_id: str = Depends(get_client_id)) -> dict:
+    return cook_first_svc.cook_first(inventory.list_items(client_id))
 
 
 class MealPlanRequest(BaseModel):
@@ -121,6 +124,8 @@ class MealPlanRequest(BaseModel):
 
 
 @router.post("/meal-plan")
-def meal_plan(req: Optional[MealPlanRequest] = None) -> dict:
+def meal_plan(
+    req: Optional[MealPlanRequest] = None, client_id: str = Depends(get_client_id)
+) -> dict:
     query = req.query if req else None
-    return meal_plan_svc.meal_plan(inventory.list_items(), query=query)
+    return meal_plan_svc.meal_plan(inventory.list_items(client_id), query=query)

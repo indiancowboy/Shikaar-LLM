@@ -15,6 +15,7 @@ const BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://127.0.0.1:8000";
 
 const ACCESS_KEY_STORAGE = "shikaar_key";
+const CLIENT_ID_STORAGE = "shikaar_client";
 
 // Free-tier hosts (Render) sleep when idle and take ~30-60s to wake, returning
 // network errors or 502/503/504 during boot. Retry those transparently so a
@@ -32,8 +33,19 @@ function authHeaders(): Record<string, string> {
   return k ? { "X-Access-Password": k } : {};
 }
 
+// Per-browser id so each tester gets a private freezer (generated once, stored locally).
+function clientId(): string {
+  if (typeof window === "undefined") return "";
+  let id = window.localStorage.getItem(CLIENT_ID_STORAGE);
+  if (!id) {
+    id = window.crypto?.randomUUID?.() ?? `c_${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem(CLIENT_ID_STORAGE, id);
+  }
+  return id;
+}
+
 async function rawFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const headers = { ...(init.headers || {}), ...authHeaders() };
+  const headers = { ...(init.headers || {}), ...authHeaders(), "X-Client-Id": clientId() };
   let lastErr: unknown;
   for (let attempt = 0; attempt <= RETRIES; attempt++) {
     try {

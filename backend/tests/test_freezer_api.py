@@ -78,6 +78,22 @@ def test_parse_falls_back_when_model_unreachable(monkeypatch):
     assert any(c["species"] == "whitetail" for c in d["candidates"])
 
 
+def test_per_client_isolation():
+    a = {"X-Client-Id": "alice"}
+    b = {"X-Client-Id": "bob"}
+    client.post("/freezer", json=_item(), headers=a)
+
+    assert len(client.get("/freezer", headers=a).json()) == 1
+    assert client.get("/freezer", headers=b).json() == []  # bob's freezer is separate
+
+    aid = client.get("/freezer", headers=a).json()[0]["id"]
+    # bob cannot touch alice's item
+    assert client.delete(f"/freezer/{aid}", headers=b).status_code == 404
+    assert client.patch(f"/freezer/{aid}", json={"qty": 9}, headers=b).status_code == 404
+    # alice can
+    assert client.delete(f"/freezer/{aid}", headers=a).status_code == 204
+
+
 def test_cook_first_empty_is_calm():
     r = client.get("/freezer/cook-first")
     assert r.status_code == 200
