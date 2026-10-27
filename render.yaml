@@ -19,5 +19,15 @@ services:
         sync: false
       - key: PINECONE_HOST
         sync: false
+      # Demo mode (per-browser freezers behind one shared password). Leave this
+      # set OR switch to accounts mode below — not both.
       - key: SHIKAAR_ACCESS_PASSWORD
+        sync: false
+      # Accounts mode: set these two to enable real per-user sign-in + durable
+      # storage. SUPABASE_JWT_SECRET = Supabase Project Settings > API > JWT
+      # Settings. DATABASE_URL = Supabase connection string (Session pooler).
+      # When these are set, unset SHIKAAR_ACCESS_PASSWORD.
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: DATABASE_URL
         sync: false
