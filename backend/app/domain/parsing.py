@@ -37,12 +37,23 @@ SPECIES_LEX: list[tuple[list[str], str, str]] = [
     (["salmon"], "salmon", "fishoily"),
     (["mackerel"], "mackerel", "fishoily"),
     (["tuna"], "tuna", "fishoily"),
+    (["dungeness", "crab"], "crab", "shellfish"),
+    (["shrimp", "prawn"], "shrimp", "shellfish"),
+    (["lobster"], "lobster", "shellfish"),
+    (["crawfish", "crayfish", "crawdad"], "crawfish", "shellfish"),
+    (["scallop"], "scallops", "shellfish"),
+    (["clam"], "clams", "shellfish"),
+    (["mussel"], "mussels", "shellfish"),
+    (["oyster"], "oysters", "shellfish"),
 ]
 
 # Compound cuts before their parts so "shoulder roast" matches as one entry.
 CUT_LEX: list[tuple[list[str], str]] = [
     (["shoulder roast"], "shoulder roast"),
     (["ham roast"], "ham roast"),
+    (["picked meat", "crab meat", "lump meat"], "picked meat"),
+    (["cluster", "claw"], "clusters"),
+    (["tails"], "tails"),
     (["back strap", "backstrap"], "backstrap"),
     (["tenderloin"], "tenderloin"),
     (["sausage"], "sausage"),
@@ -66,7 +77,7 @@ QTY_WORDS = {
 }
 
 _VALID_CATEGORIES = {
-    "biggame", "hog", "bear", "waterfowl", "upland", "fishlean", "fishoily",
+    "biggame", "hog", "bear", "waterfowl", "upland", "fishlean", "fishoily", "shellfish",
 }
 
 # Uniform packs written just before a cut: "10 2 lb packs of", "10 x 2lb packs",

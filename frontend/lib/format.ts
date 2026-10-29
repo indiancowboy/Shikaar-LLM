@@ -37,6 +37,7 @@ export const CAT_LABEL: Record<Category, string> = {
   upland: "UPLAND",
   fishlean: "FISH · LEAN",
   fishoily: "FISH · OILY",
+  shellfish: "SHELLFISH",
 };
 
 // species options for the manual form, value = "species|category" (brief §11).
@@ -86,6 +87,19 @@ export const SPECIES_OPTIONS: { group: string; items: [string, string, Category]
       ["salmon", "Salmon", "fishoily"],
       ["mackerel", "Mackerel", "fishoily"],
       ["tuna", "Tuna", "fishoily"],
+    ],
+  },
+  {
+    group: "Shellfish",
+    items: [
+      ["crab", "Crab (Dungeness, blue…)", "shellfish"],
+      ["shrimp", "Shrimp / prawns", "shellfish"],
+      ["lobster", "Lobster", "shellfish"],
+      ["crawfish", "Crawfish", "shellfish"],
+      ["scallops", "Scallops", "shellfish"],
+      ["clams", "Clams", "shellfish"],
+      ["mussels", "Mussels", "shellfish"],
+      ["oysters", "Oysters", "shellfish"],
     ],
   },
 ];

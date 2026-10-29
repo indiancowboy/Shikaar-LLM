@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from .domain import shelf_life
 
 Category = Literal[
-    "biggame", "hog", "bear", "waterfowl", "upland", "fishlean", "fishoily"
+    "biggame", "hog", "bear", "waterfowl", "upland", "fishlean", "fishoily", "shellfish"
 ]
 Unit = Literal["lbs", "kg", "pkgs"]
 Storage = Literal["vacuum_sealed", "wrapped"]

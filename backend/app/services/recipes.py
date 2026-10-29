@@ -30,7 +30,7 @@ def get(recipe_id: str) -> dict | None:
 
 def matches_for_item(item: FreezerItem) -> list[dict]:
     """Recipes that fit one item, exact fits first: [{recipe, kind, note}]."""
-    ct = cut_type_for(item.category, item.cut)
+    ct = cut_type_for(item.category, item.cut, item.species)
     out = []
     for recipe in catalog().values():
         if item.category not in recipe["categories"]:

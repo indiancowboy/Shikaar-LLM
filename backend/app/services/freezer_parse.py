@@ -23,7 +23,7 @@ EXTRACTION_SYSTEM = (
 
 EXTRACTION_INSTRUCTIONS = """Return a JSON object: {"entries": [ ... ]}.
 Each entry: {"species": string (lowercase, underscores), "category": one of
-["biggame","hog","bear","waterfowl","upland","fishlean","fishoily"], "cut": string,
+["biggame","hog","bear","waterfowl","upland","fishlean","fishoily","shellfish"], "cut": string,
 "qty": number, "unit": one of ["lbs","kg","pkgs"], "storage": one of
 ["vacuum_sealed","wrapped"], "packs": integer or null, "pack_size": number or null}.
 
@@ -38,7 +38,10 @@ Weight with no count -> packs null, qty = the weight ("8 lbs ground").
 
 category map: deer/elk/nilgai/antelope=biggame; hog/boar=hog; bear=bear;
 duck/goose/teal=waterfowl; dove/quail/pheasant/turkey=upland;
-redfish/catfish/bass/walleye/snapper=fishlean; salmon/mackerel/tuna=fishoily.
+redfish/catfish/bass/walleye/snapper=fishlean; salmon/mackerel/tuna=fishoily;
+crab/shrimp/prawns/lobster/crawfish/scallops/clams/mussels/oysters=shellfish.
+crab cuts: "whole" (whole crabs, cooked or raw), "clusters" (legs/claws), or
+"picked meat"; shrimp/lobster/crawfish: "whole" or "tails".
 
 - one entry per distinct cut; "shoulder roast" is ONE entry, not shoulder + roast
 - normalize: "back straps"->backstrap, "the rest ground"->ground, "loins into steaks"->steaks

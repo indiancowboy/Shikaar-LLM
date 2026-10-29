@@ -48,7 +48,10 @@ _PROMPT = """Plan {n} dinners for the week from this freezer. Reply with ONLY a 
   the cut type: ground -> keema, kebabs, meatballs, patties, fillings, sauces;
   sausage -> crumbled or sliced; tender -> fast and hot (sear, grill), never a
   long braise; braise -> low and slow; breast -> quick sear or slice-and-fry;
-  fillet -> pan, grill, poach or curry. Write a real recipe: ingredients with
+  fillet -> pan, grill, poach or curry; crab_whole -> steam or boil, then crack
+  or pick (shells make stock); crab_meat -> cakes, tikki, curries, folded in at
+  the end; other shellfish (shrimp, scallops, lobster) -> fast, 2-5 minutes,
+  never stewed. Write a real recipe: ingredients with
   quantities, and numbered steps with times and doneness temps (wild hog and
   bear: 160°F; ground game: 160°F).
 - Never describe an ingredient that isn't in the freezer as if it were (ground
@@ -94,7 +97,7 @@ def amount_label(it: FreezerItem) -> str:
 def _manifest(graded: list[tuple[dict, FreezerItem]]) -> str:
     return "\n".join(
         f"- [{it.id}] {amount_label(it)} {it.species.replace('_', ' ')} {it.cut} — "
-        f"{cut_type_for(it.category, it.cut) or 'unknown cut'} — "
+        f"{cut_type_for(it.category, it.cut, it.species) or 'unknown cut'} — "
         f"{fresh['age_months']}mo old, {fresh['status'].upper()}"
         for fresh, it in graded
     )

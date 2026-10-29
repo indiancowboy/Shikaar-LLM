@@ -2,7 +2,7 @@
 
 export type Status = "prime" | "good" | "use_soon" | "past_prime";
 export type Category =
-  | "biggame" | "hog" | "bear" | "waterfowl" | "upland" | "fishlean" | "fishoily";
+  | "biggame" | "hog" | "bear" | "waterfowl" | "upland" | "fishlean" | "fishoily" | "shellfish";
 export type Unit = "lbs" | "kg" | "pkgs";
 export type Storage = "vacuum_sealed" | "wrapped";
 

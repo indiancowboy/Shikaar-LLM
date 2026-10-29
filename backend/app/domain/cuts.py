@@ -54,9 +54,18 @@ _FISH_RULES: list[tuple[str, str]] = [
 ]
 
 
-def cut_type_for(category: str, cut: str) -> Optional[str]:
+_CRAB_MEAT = r"meat|picked|lump|claw meat"
+
+
+def cut_type_for(category: str, cut: str, species: str = "") -> Optional[str]:
     """Map a freezer item's free-text cut to a cut type (None if unknown)."""
     c = (cut or "").lower().replace("_", " ").strip()
+    if category == "shellfish":
+        # Only crab has library recipes; whole crabs, legs, claws and clusters
+        # all cook as "crab_whole". Other shellfish get creative dishes only.
+        if "crab" not in f"{species} {c}".lower():
+            return None
+        return "crab_meat" if re.search(_CRAB_MEAT, c) else "crab_whole"
     # Fish logged without a cut (the parser's "whole / mixed") is almost always fillets.
     if category in _FISH and c in ("", "whole / mixed"):
         return "fillet"
