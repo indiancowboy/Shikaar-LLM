@@ -15,10 +15,13 @@ from datetime import date
 # decision — tune independently here if real-world numbers differ.
 SHELF_LIFE_MONTHS: dict[str, dict[str, int]] = {
     "biggame":   {"vacuum_sealed": 24, "wrapped": 9},   # venison, elk, nilgai, antelope (lean)
-    "hog":       {"vacuum_sealed": 6,  "wrapped": 4},   # wild hog/boar (fatty)
+    "hog":       {"vacuum_sealed": 6,  "wrapped": 4},   # wild hog/boar, domestic pork (fatty)
     "bear":      {"vacuum_sealed": 6,  "wrapped": 4},   # fatty — defaults to hog profile
     "waterfowl": {"vacuum_sealed": 6,  "wrapped": 4},   # duck, goose, teal (fatty)
     "upland":    {"vacuum_sealed": 9,  "wrapped": 6},   # dove, quail, pheasant, turkey
+    "smallgame": {"vacuum_sealed": 9,  "wrapped": 6},   # rabbit, hare, squirrel (lean, like upland)
+    "poultry":   {"vacuum_sealed": 12, "wrapped": 9},   # chicken, cornish hen (USDA 9-12 mo)
+    "redmeat":   {"vacuum_sealed": 12, "wrapped": 6},   # beef, lamb, goat (USDA 4-12 mo)
     "fishlean":  {"vacuum_sealed": 6,  "wrapped": 3},   # redfish, catfish, bass, walleye, snapper
     "fishoily":  {"vacuum_sealed": 3,  "wrapped": 2},   # salmon, mackerel, tuna (degrade fast)
     "shellfish": {"vacuum_sealed": 6,  "wrapped": 3},   # crab, shrimp, lobster, scallops (USDA ~3-6 mo)

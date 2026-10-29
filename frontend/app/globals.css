@@ -204,3 +204,5 @@ footer { margin-top: 34px; font-family: var(--f-mono); font-size: 10px; color: v
   .stats { flex-wrap: wrap; }
   .stat { min-width: 33%; border-bottom: 1px solid var(--line); }
 }
+
+.species-hint { font-family: var(--f-mono); font-size: 10px; color: var(--seafoam); letter-spacing: .06em; margin-top: 3px; }

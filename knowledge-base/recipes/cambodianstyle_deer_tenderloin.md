@@ -3,7 +3,7 @@ title: "Cambodian-Style Deer Tenderloin"
 protein: "venison"
 species: ['deer']
 cut: "backstrap / tenderloin"
-categories: ['biggame']
+categories: ['biggame', 'redmeat']
 cuts: ['tender']
 cuisine: "fusion"
 cooking_method: "sous vide"

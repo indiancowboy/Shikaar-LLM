@@ -2,7 +2,8 @@
 
 export type Status = "prime" | "good" | "use_soon" | "past_prime";
 export type Category =
-  | "biggame" | "hog" | "bear" | "waterfowl" | "upland" | "fishlean" | "fishoily" | "shellfish";
+  | "biggame" | "hog" | "bear" | "smallgame" | "waterfowl" | "upland" | "poultry" | "redmeat"
+  | "fishlean" | "fishoily" | "shellfish";
 export type Unit = "lbs" | "kg" | "pkgs";
 export type Storage = "vacuum_sealed" | "wrapped";
 
@@ -39,6 +40,19 @@ export interface ParseCandidate {
   packs?: number | null;
   pack_size?: number | null;
   parsed_offline: boolean;
+}
+
+export interface SpeciesEntry {
+  key: string;
+  label: string;
+  aliases: string[];
+  category: Category;
+  group: string;
+}
+
+export interface SpeciesResponse {
+  species: SpeciesEntry[];
+  categories: { key: Category; label: string; hint: string }[];
 }
 
 export interface UseResponse {

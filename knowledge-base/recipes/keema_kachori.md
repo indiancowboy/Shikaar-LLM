@@ -3,7 +3,7 @@ title: "Keema Kachori"
 protein: "venison"
 species: ['deer']
 cut: "ground"
-categories: ['biggame', 'hog', 'bear']
+categories: ['biggame', 'hog', 'bear', 'redmeat']
 cuts: ['ground']
 cuisine: "fusion"
 cooking_method: "stovetop"

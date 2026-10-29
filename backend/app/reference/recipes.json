@@ -84,7 +84,8 @@
     "categories": [
       "hog",
       "biggame",
-      "bear"
+      "bear",
+      "redmeat"
     ],
     "cuts": [
       "ground"
@@ -102,7 +103,8 @@
     "prep_time": "15 min",
     "cook_time": "30–45 min",
     "categories": [
-      "biggame"
+      "biggame",
+      "redmeat"
     ],
     "cuts": [
       "tender"
@@ -158,7 +160,8 @@
     "categories": [
       "biggame",
       "hog",
-      "bear"
+      "bear",
+      "redmeat"
     ],
     "cuts": [
       "ground"
@@ -308,7 +311,8 @@
     "categories": [
       "biggame",
       "hog",
-      "bear"
+      "bear",
+      "redmeat"
     ],
     "cuts": [
       "ground"
@@ -328,7 +332,8 @@
     "categories": [
       "biggame",
       "hog",
-      "bear"
+      "bear",
+      "redmeat"
     ],
     "cuts": [
       "ground"
@@ -418,7 +423,8 @@
     "prep_time": "15 min",
     "cook_time": "30–45 min",
     "categories": [
-      "biggame"
+      "biggame",
+      "redmeat"
     ],
     "cuts": [
       "tender"
@@ -457,7 +463,8 @@
     "categories": [
       "hog",
       "biggame",
-      "bear"
+      "bear",
+      "redmeat"
     ],
     "cuts": [
       "ground",

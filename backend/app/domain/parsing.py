@@ -13,39 +13,7 @@ from __future__ import annotations
 
 import re
 
-# (keywords, canonical species, category). Compound/longer keywords help, but
-# attribution is by position so duplicates within a species are harmless.
-SPECIES_LEX: list[tuple[list[str], str, str]] = [
-    (["whitetail", "white tail", "mule deer", "muley", "deer", "venison"], "whitetail", "biggame"),
-    (["elk"], "elk", "biggame"),
-    (["nilgai"], "nilgai", "biggame"),
-    (["antelope", "pronghorn"], "antelope", "biggame"),
-    (["black bear", "bear"], "black_bear", "bear"),
-    (["hog", "boar", "feral pig", "wild pig"], "wild_hog", "hog"),
-    (["mallard", "duck"], "duck", "waterfowl"),
-    (["teal"], "teal", "waterfowl"),
-    (["goose"], "goose", "waterfowl"),
-    (["dove"], "dove", "upland"),
-    (["quail"], "quail", "upland"),
-    (["pheasant"], "pheasant", "upland"),
-    (["turkey"], "turkey", "upland"),
-    (["redfish", "red fish"], "redfish", "fishlean"),
-    (["catfish"], "catfish", "fishlean"),
-    (["walleye"], "walleye", "fishlean"),
-    (["snapper"], "snapper", "fishlean"),
-    (["bass"], "bass", "fishlean"),
-    (["salmon"], "salmon", "fishoily"),
-    (["mackerel"], "mackerel", "fishoily"),
-    (["tuna"], "tuna", "fishoily"),
-    (["dungeness", "crab"], "crab", "shellfish"),
-    (["shrimp", "prawn"], "shrimp", "shellfish"),
-    (["lobster"], "lobster", "shellfish"),
-    (["crawfish", "crayfish", "crawdad"], "crawfish", "shellfish"),
-    (["scallop"], "scallops", "shellfish"),
-    (["clam"], "clams", "shellfish"),
-    (["mussel"], "mussels", "shellfish"),
-    (["oyster"], "oysters", "shellfish"),
-]
+from . import species as species_catalog
 
 # Compound cuts before their parts so "shoulder roast" matches as one entry.
 CUT_LEX: list[tuple[list[str], str]] = [
@@ -76,9 +44,7 @@ QTY_WORDS = {
     "some": 2, "a little": 1, "little": 1, "dozen": 12, "the rest": 1,
 }
 
-_VALID_CATEGORIES = {
-    "biggame", "hog", "bear", "waterfowl", "upland", "fishlean", "fishoily", "shellfish",
-}
+_VALID_CATEGORIES = set(species_catalog.CATEGORIES)
 
 # Uniform packs written just before a cut: "10 2 lb packs of", "10 x 2lb packs",
 # "10 packs of 2 lb". Group 1 = pack count, group 2 = weight per pack.
@@ -108,15 +74,8 @@ def _pack_before(t: str, i: int) -> tuple[int, float] | None:
 
 def category_for(species: str) -> str | None:
     """Best-effort category for a (possibly messy) species string."""
-    s = species.lower().replace("_", " ").strip()
-    canon = species.lower().replace(" ", "_")
-    for kws, sp, cat in SPECIES_LEX:
-        if sp == canon:
-            return cat
-        for k in kws:
-            if k in s:
-                return cat
-    return None
+    hit = species_catalog.lookup(species)
+    return hit.category if hit else None
 
 
 def fallback_parse(text: str) -> list[dict]:
@@ -125,13 +84,10 @@ def fallback_parse(text: str) -> list[dict]:
     t = text.lower()
 
     # Locate every species mention, ordered by position.
-    sp: list[dict] = []
-    for kws, species, cat in SPECIES_LEX:
-        for k in kws:
-            i = t.find(k)
-            if i > -1:
-                sp.append({"i": i, "species": species, "category": cat})
-    sp.sort(key=lambda x: x["i"])
+    sp: list[dict] = [
+        {"i": i, "species": hit.key, "category": hit.category}
+        for i, hit in species_catalog.find_all(t)
+    ]
     if not sp:
         return []
 
@@ -149,13 +105,16 @@ def fallback_parse(text: str) -> list[dict]:
                 if not any(used[i:i + len(k)]):
                     for j in range(i, i + len(k)):
                         used[j] = True
-                    # nearest species at or before this cut
-                    owner = sp[0]
-                    for s in sp:
-                        if s["i"] <= i:
-                            owner = s
-                        else:
-                            break
+                    # a species written right after the cut ("ground goat")
+                    # owns it; otherwise the nearest species before it
+                    after = next((s for s in sp if i + len(k) < s["i"] <= i + len(k) + 2), None)
+                    owner = after or sp[0]
+                    if after is None:
+                        for s in sp:
+                            if s["i"] <= i:
+                                owner = s
+                            else:
+                                break
                     packed = _pack_before(t, i)
                     if packed:
                         packs, size = packed
