@@ -12,7 +12,7 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
   const [mode, setMode] = useState<Mode>("text");
   const [text, setText] = useState("");
   const [species, setSpecies] = useState("black bear");
-  const [weight, setWeight] = useState(300);
+  const [weight, setWeight] = useState("300");
   const [dressed, setDressed] = useState(false);
 
   const [busy, setBusy] = useState(false);
@@ -65,7 +65,12 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
 
   const estimate = () =>
     run(async () => {
-      const res = await api.estimateYield(species, weight, dressed);
+      const lbs = parseFloat(weight);
+      if (!(lbs > 0)) {
+        setErr("Enter the animal's weight in lbs.");
+        return;
+      }
+      const res = await api.estimateYield(species, lbs, dressed);
       setCandidates(res.candidates);
       setOffline(false);
       setNote(`${res.note} ~${res.edible_lbs} lbs edible from a ${weight} lb ${pretty(res.species)}.`);
@@ -143,9 +148,10 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
             <label>Weight (lbs)</label>
             <input
               type="number"
+              inputMode="decimal"
               min={1}
               value={weight}
-              onChange={(e) => setWeight(parseFloat(e.target.value) || 0)}
+              onChange={(e) => setWeight(e.target.value)}
             />
           </div>
           <div className="field" style={{ width: 130 }}>
@@ -225,7 +231,7 @@ function ManualEntry({ onChanged, catalog }: { onChanged: () => void; catalog: S
   const [pickedCat, setPickedCat] = useState<Category | "">("");
   const [cut, setCut] = useState("");
   const [packs, setPacks] = useState(""); // blank = not packed
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState("1");
   const [unit, setUnit] = useState<Unit>("lbs");
   const [storage, setStorage] = useState<Storage>("vacuum_sealed");
   const [date, setDate] = useState(todayISO());
@@ -246,6 +252,11 @@ function ManualEntry({ onChanged, catalog }: { onChanged: () => void; catalog: S
       return;
     }
     const species = known ? known.key : speciesKey(speciesText);
+    const amount = parseFloat(qty);
+    if (!(amount > 0)) {
+      setErr(packCount ? "Enter the size of one pack." : "Enter a quantity.");
+      return;
+    }
     if (packCount && unit === "pkgs") {
       setErr("For packs, give the size of one pack in lbs or kg.");
       return;
@@ -257,18 +268,18 @@ function ManualEntry({ onChanged, catalog }: { onChanged: () => void; catalog: S
         species,
         category,
         cut: cut.trim() || "whole / mixed",
-        qty: packCount ? packCount * qty : qty,
+        qty: packCount ? packCount * amount : amount,
         unit,
         storage,
         date_frozen: date,
         packs: packCount,
-        pack_size: packCount ? qty : null,
+        pack_size: packCount ? amount : null,
       });
       setCut("");
       setSpeciesText("");
       setPickedCat("");
       setPacks("");
-      setQty(1);
+      setQty("1");
       onChanged();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Couldn't add that item.");
@@ -329,7 +340,14 @@ function ManualEntry({ onChanged, catalog }: { onChanged: () => void; catalog: S
         </div>
         <div className="field">
           <label>{packCount ? "Size per pack" : "Qty"}</label>
-          <input type="number" min={0} step={0.25} value={qty} onChange={(e) => setQty(parseFloat(e.target.value) || 0)} />
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step={0.25}
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+          />
         </div>
         <div className="field">
           <label>Unit</label>
