@@ -138,9 +138,11 @@ export const api = {
       body: JSON.stringify({ text }),
     }).then(asJson<CandidatesResponse>),
 
-  parseImage: (file: File) => {
+  // `hint`: optional note sent with the photo, e.g. "wild hog".
+  parseImage: (file: File, hint?: string) => {
     const fd = new FormData();
     fd.append("file", file);
+    if (hint) fd.append("hint", hint);
     return rawFetch("/freezer/parse-image", { method: "POST", body: fd }).then(
       asJson<CandidatesResponse>,
     );

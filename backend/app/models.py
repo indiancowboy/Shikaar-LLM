@@ -128,3 +128,5 @@ class ParseCandidate(BaseModel):
     packs: Optional[int] = Field(default=None, ge=1)
     pack_size: Optional[float] = Field(default=None, gt=0)
     parsed_offline: bool = False
+    # The note/photo didn't say which animal; the UI asks before adding.
+    species_unknown: bool = False

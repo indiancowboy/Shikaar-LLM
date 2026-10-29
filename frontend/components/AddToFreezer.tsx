@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import CandidateEditor from "@/components/CandidateEditor";
 import SpeciesPicker from "@/components/SpeciesPicker";
 import { amountLabel, CAT_LABEL, pretty, resolveSpecies, speciesKey, todayISO } from "@/lib/format";
 import type { Category, ParseCandidate, SpeciesResponse, Storage, Unit } from "@/lib/types";
@@ -20,6 +21,9 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
   const [candidates, setCandidates] = useState<ParseCandidate[] | null>(null);
   const [offline, setOffline] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [whichText, setWhichText] = useState("");
+  const [whichCat, setWhichCat] = useState<Category | "">("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [catalog, setCatalog] = useState<SpeciesResponse | null>(null);
 
@@ -46,19 +50,20 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
         return;
       }
       const res = await api.parseText(text);
-      setCandidates(res.candidates);
+      showCandidates(res.candidates);
       setOffline(res.parsed_offline);
       setNote(null);
     });
 
   const parseImage = (file: File) =>
     run(async () => {
-      const res = await api.parseImage(file);
+      // Whatever's typed in the box rides along as a note ("wild hog").
+      const res = await api.parseImage(file, text.trim() || undefined);
       if (!res.candidates.length) {
         setErr("Couldn't read that photo — try a clearer shot or use the manual form.");
         return;
       }
-      setCandidates(res.candidates);
+      showCandidates(res.candidates);
       setOffline(res.parsed_offline);
       setNote(null);
     });
@@ -71,17 +76,48 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
         return;
       }
       const res = await api.estimateYield(species, lbs, dressed);
-      setCandidates(res.candidates);
+      showCandidates(res.candidates);
       setOffline(false);
       setNote(`${res.note} ~${res.edible_lbs} lbs edible from a ${weight} lb ${pretty(res.species)}.`);
     });
 
-  const dropCandidate = (i: number) =>
+  // New results: reset the review helpers.
+  const showCandidates = (cs: ParseCandidate[] | null) => {
+    setCandidates(cs);
+    setEditing(null);
+    setWhichText("");
+    setWhichCat("");
+  };
+
+  const unknownCount = candidates?.filter((c) => c.species_unknown).length ?? 0;
+  const which = resolveSpecies(catalog?.species ?? [], whichText);
+
+  // "Which animal is this?" -> fill every entry the parser couldn't place.
+  const applyWhich = () => {
+    const category = which?.category ?? whichCat;
+    if (!whichText.trim() || !category) {
+      setErr(whichText.trim() ? "Pick a category for this species." : "Pick the animal first.");
+      return;
+    }
+    const key = which ? which.key : speciesKey(whichText);
+    setErr(null);
+    setCandidates((cs) =>
+      cs ? cs.map((c) => (c.species_unknown ? { ...c, species: key, category, species_unknown: false } : c)) : cs,
+    );
+  };
+
+  const dropCandidate = (i: number) => {
+    setEditing(null);
     setCandidates((cs) => (cs ? cs.filter((_, idx) => idx !== i) : cs));
+  };
 
   const commit = () =>
     run(async () => {
       if (!candidates) return;
+      if (candidates.some((c) => c.species_unknown)) {
+        setErr("Pick the animal for every entry first.");
+        return;
+      }
       const frozen = todayISO();
       for (const c of candidates) {
         await api.add({
@@ -96,7 +132,7 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
           pack_size: c.pack_size ?? null,
         });
       }
-      setCandidates(null);
+      showCandidates(null);
       setText("");
       setNote(null);
       onChanged();
@@ -135,7 +171,8 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
         </div>
         <div className="hint">
           Shikaar reads plain language or a photo of a cut sheet — sorts out species · cut ·
-          quantity · storage, and shows you the entries before anything's logged.
+          quantity · storage, and shows you the entries before anything's logged. Photo of a
+          cut sheet? Type the animal first (e.g. "wild hog") and it goes along with the photo.
         </div>
 
         <div className="divider">or estimate from an animal</div>
@@ -183,26 +220,71 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
                 {note}
               </div>
             ) : null}
-            {candidates.map((c, i) => (
-              <div className="chip" key={i}>
-                <div>
-                  <div className="ctxt">
-                    {pretty(c.species)} / {pretty(c.cut)}
-                  </div>
-                  <div className="cmeta">
-                    {amountLabel(c)}
-                    {c.packs ? ` (${c.qty} ${c.unit})` : ""} ·{" "}
-                    {c.storage === "vacuum_sealed" ? "vac-sealed" : "wrapped"} ·{" "}
-                    {CAT_LABEL[c.category]}
-                  </div>
+            {unknownCount ? (
+              <div className="which">
+                <div className="which-q">
+                  Which animal is this? <span>({unknownCount} {unknownCount === 1 ? "entry" : "entries"})</span>
                 </div>
-                <button className="x" onClick={() => dropCandidate(i)} title="Remove">
-                  ✕
-                </button>
+                <div className="which-row">
+                  <div className="field" style={{ flex: "1 1 180px" }}>
+                    <SpeciesPicker value={whichText} onChange={setWhichText} catalog={catalog} placeholder="wild hog, elk…" />
+                    {which ? (
+                      <div className="species-hint">
+                        {which.label} · {CAT_LABEL[which.category]}
+                      </div>
+                    ) : null}
+                  </div>
+                  {whichText.trim() && !which ? (
+                    <select value={whichCat} onChange={(e) => setWhichCat(e.target.value as Category)}>
+                      <option value="" disabled>
+                        Category…
+                      </option>
+                      {(Object.keys(CAT_LABEL) as Category[]).map((k) => (
+                        <option key={k} value={k}>
+                          {CAT_LABEL[k]}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+                  <button className="btn-log" type="button" onClick={applyWhich}>
+                    Apply
+                  </button>
+                </div>
               </div>
-            ))}
+            ) : null}
+            {candidates.map((c, i) =>
+              editing === i ? (
+                <CandidateEditor
+                  key={i}
+                  candidate={c}
+                  catalog={catalog}
+                  onCancel={() => setEditing(null)}
+                  onSave={(updated) => {
+                    setCandidates((cs) => (cs ? cs.map((x, j) => (j === i ? updated : x)) : cs));
+                    setEditing(null);
+                  }}
+                />
+              ) : (
+                <div className={`chip ${c.species_unknown ? "unknown" : ""}`} key={i}>
+                  <button className="chip-body" type="button" onClick={() => setEditing(i)} title="Edit">
+                    <div className="ctxt">
+                      {c.species_unknown ? "Unknown animal" : pretty(c.species)} / {pretty(c.cut)}
+                    </div>
+                    <div className="cmeta">
+                      {amountLabel(c)}
+                      {c.packs ? ` (${c.qty} ${c.unit})` : ""} ·{" "}
+                      {c.storage === "vacuum_sealed" ? "vac-sealed" : "wrapped"}
+                      {c.species_unknown ? "" : ` · ${CAT_LABEL[c.category]}`} · <span className="chip-edit">tap to edit</span>
+                    </div>
+                  </button>
+                  <button className="x" onClick={() => dropCandidate(i)} title="Remove">
+                    ✕
+                  </button>
+                </div>
+              ),
+            )}
             <div className="pacts">
-              <button className="btn-ghost" onClick={() => setCandidates(null)} disabled={busy}>
+              <button className="btn-ghost" onClick={() => showCandidates(null)} disabled={busy}>
                 Discard
               </button>
               <button className="btn-log" onClick={commit} disabled={busy || !candidates.length}>
