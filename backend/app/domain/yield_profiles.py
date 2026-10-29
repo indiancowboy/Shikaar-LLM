@@ -31,6 +31,8 @@ YIELD_PROFILES: dict[str, tuple[float, dict[str, float]]] = {
     "upland": (0.45, {"breasts": 0.60, "legs": 0.25, "whole / mixed": 0.15}),
     "fishlean": (0.45, {"fillets": 1.0}),
     "fishoily": (0.50, {"fillets": 1.0}),
+    # Crab-based: picked meat is roughly a quarter of whole live weight.
+    "shellfish": (0.25, {"picked meat": 1.0}),
 }
 
 DEFAULT_CATEGORY = "biggame"

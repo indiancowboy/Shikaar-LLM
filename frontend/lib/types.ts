@@ -2,7 +2,7 @@
 
 export type Status = "prime" | "good" | "use_soon" | "past_prime";
 export type Category =
-  | "biggame" | "hog" | "bear" | "waterfowl" | "upland" | "fishlean" | "fishoily";
+  | "biggame" | "hog" | "bear" | "waterfowl" | "upland" | "fishlean" | "fishoily" | "shellfish";
 export type Unit = "lbs" | "kg" | "pkgs";
 export type Storage = "vacuum_sealed" | "wrapped";
 
@@ -16,6 +16,9 @@ export interface FreezerItemCreate {
   date_frozen: string; // ISO date (YYYY-MM-DD)
   harvest_location?: string | null;
   notes?: string | null;
+  // Uniform packs: `packs` × `pack_size` (in `unit`); the server derives `qty`.
+  packs?: number | null;
+  pack_size?: number | null;
 }
 
 export interface FreezerItemRead extends FreezerItemCreate {
@@ -33,7 +36,14 @@ export interface ParseCandidate {
   qty: number;
   unit: Unit;
   storage: Storage;
+  packs?: number | null;
+  pack_size?: number | null;
   parsed_offline: boolean;
+}
+
+export interface UseResponse {
+  removed: boolean;
+  item: FreezerItemRead | null;
 }
 
 export interface CandidatesResponse {
@@ -59,7 +69,29 @@ export interface CookFirstResponse {
   cards: CookFirstCard[];
 }
 
+export interface MealUse {
+  item_id: string;
+  packs: number | null;
+}
+
+export interface Meal {
+  title: string;
+  kind: "library" | "creative";
+  why: string;
+  time: string | null;
+  serves: string | null;
+  uses: MealUse[];
+  adaptation: string | null;
+  cuisine: string | null;
+  // library meals: the TBGH recipe, verbatim
+  recipe: { id: string; title: string; text: string; prep_time: string; cook_time: string } | null;
+  // creative meals: model-written recipe
+  ingredients: string[];
+  steps: string[];
+}
+
 export interface MealPlanResponse {
   plan: string;
+  meals: Meal[];
   manifest: { item: FreezerItemRead }[];
 }

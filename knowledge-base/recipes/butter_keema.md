@@ -1,8 +1,10 @@
 ---
 title: "Butter Keema"
-protein: "venison"
+protein: "wild boar"
 species: ['deer']
-cut: ""
+cut: "ground"
+categories: ['hog', 'biggame', 'bear']
+cuts: ['ground']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

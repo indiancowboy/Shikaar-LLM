@@ -28,9 +28,14 @@ CREATE TABLE IF NOT EXISTS freezer_items (
     storage TEXT,
     date_frozen DATE,
     harvest_location TEXT,
-    notes TEXT
+    notes TEXT,
+    packs INTEGER,
+    pack_size DOUBLE PRECISION
 );
 CREATE INDEX IF NOT EXISTS freezer_items_owner_idx ON freezer_items (owner_id);
+-- Tables created before packs existed (e.g. the live one) gain the columns here.
+ALTER TABLE freezer_items ADD COLUMN IF NOT EXISTS packs INTEGER;
+ALTER TABLE freezer_items ADD COLUMN IF NOT EXISTS pack_size DOUBLE PRECISION;
 """
 
 
@@ -61,7 +66,7 @@ def _upsert(conn, item: FreezerItem, owner_id: str) -> None:
         (
             owner_id, item.id, item.species, item.category, item.cut, item.qty,
             item.unit, item.storage, item.date_frozen, item.harvest_location,
-            item.notes,
+            item.notes, item.packs, item.pack_size,
         ),
     )
 

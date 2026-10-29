@@ -2,7 +2,9 @@
 title: "Crab Pot Pie"
 protein: "crab"
 species: ['dungeness crab']
-cut: ""
+cut: "whole crab"
+categories: ['shellfish']
+cuts: ['crab_whole']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

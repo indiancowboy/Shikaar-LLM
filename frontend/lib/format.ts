@@ -5,6 +5,14 @@ export const pretty = (s: string) =>
 
 export const todayISO = () => new Date().toISOString().slice(0, 10);
 
+const num = (n: number) => String(Math.round(n * 100) / 100);
+
+/** "10 packs × 2 lbs" for packed batches, else "8 lbs" / "2 pkgs". */
+export const amountLabel = (a: { qty: number; unit: string; packs?: number | null; pack_size?: number | null }) =>
+  a.packs && a.pack_size
+    ? `${a.packs} ${a.packs === 1 ? "pack" : "packs"} × ${num(a.pack_size)} ${a.unit}`
+    : `${num(a.qty)} ${a.unit}`;
+
 export const STATUS_FILL: Record<Status, string> = {
   prime: "var(--prime)",
   good: "var(--good)",
@@ -29,6 +37,7 @@ export const CAT_LABEL: Record<Category, string> = {
   upland: "UPLAND",
   fishlean: "FISH · LEAN",
   fishoily: "FISH · OILY",
+  shellfish: "SHELLFISH",
 };
 
 // species options for the manual form, value = "species|category" (brief §11).
@@ -78,6 +87,19 @@ export const SPECIES_OPTIONS: { group: string; items: [string, string, Category]
       ["salmon", "Salmon", "fishoily"],
       ["mackerel", "Mackerel", "fishoily"],
       ["tuna", "Tuna", "fishoily"],
+    ],
+  },
+  {
+    group: "Shellfish",
+    items: [
+      ["crab", "Crab (Dungeness, blue…)", "shellfish"],
+      ["shrimp", "Shrimp / prawns", "shellfish"],
+      ["lobster", "Lobster", "shellfish"],
+      ["crawfish", "Crawfish", "shellfish"],
+      ["scallops", "Scallops", "shellfish"],
+      ["clams", "Clams", "shellfish"],
+      ["mussels", "Mussels", "shellfish"],
+      ["oysters", "Oysters", "shellfish"],
     ],
   },
 ];

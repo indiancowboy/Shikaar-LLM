@@ -1,8 +1,10 @@
 ---
 title: "Cambodian-Style Deer Tenderloin"
-protein: "fish"
+protein: "venison"
 species: ['deer']
-cut: "backstrap"
+cut: "backstrap / tenderloin"
+categories: ['biggame']
+cuts: ['tender']
 cuisine: "fusion"
 cooking_method: "sous vide"
 difficulty: "intermediate"

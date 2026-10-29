@@ -37,12 +37,23 @@ SPECIES_LEX: list[tuple[list[str], str, str]] = [
     (["salmon"], "salmon", "fishoily"),
     (["mackerel"], "mackerel", "fishoily"),
     (["tuna"], "tuna", "fishoily"),
+    (["dungeness", "crab"], "crab", "shellfish"),
+    (["shrimp", "prawn"], "shrimp", "shellfish"),
+    (["lobster"], "lobster", "shellfish"),
+    (["crawfish", "crayfish", "crawdad"], "crawfish", "shellfish"),
+    (["scallop"], "scallops", "shellfish"),
+    (["clam"], "clams", "shellfish"),
+    (["mussel"], "mussels", "shellfish"),
+    (["oyster"], "oysters", "shellfish"),
 ]
 
 # Compound cuts before their parts so "shoulder roast" matches as one entry.
 CUT_LEX: list[tuple[list[str], str]] = [
     (["shoulder roast"], "shoulder roast"),
     (["ham roast"], "ham roast"),
+    (["picked meat", "crab meat", "lump meat"], "picked meat"),
+    (["cluster", "claw"], "clusters"),
+    (["tails"], "tails"),
     (["back strap", "backstrap"], "backstrap"),
     (["tenderloin"], "tenderloin"),
     (["sausage"], "sausage"),
@@ -66,8 +77,33 @@ QTY_WORDS = {
 }
 
 _VALID_CATEGORIES = {
-    "biggame", "hog", "bear", "waterfowl", "upland", "fishlean", "fishoily",
+    "biggame", "hog", "bear", "waterfowl", "upland", "fishlean", "fishoily", "shellfish",
 }
+
+# Uniform packs written just before a cut: "10 2 lb packs of", "10 x 2lb packs",
+# "10 packs of 2 lb". Group 1 = pack count, group 2 = weight per pack.
+_PACK_PATTERNS = [
+    re.compile(
+        r"(\d+)\s*(?:x\s*)?(\d+(?:\.\d+)?)\s*-?\s*(?:lbs?|pounds?|#)\s*"
+        r"(?:packs?|pkgs?|packages?|bags?)\s*(?:of\s*)?$"
+    ),
+    re.compile(
+        r"(\d+)\s*(?:packs?|pkgs?|packages?|bags?)\s*(?:of\s*)?(?:about\s*|~\s*)?"
+        r"(\d+(?:\.\d+)?)\s*-?\s*(?:lbs?|pounds?|#)\s*(?:each\s*)?(?:of\s*)?$"
+    ),
+]
+
+
+def _pack_before(t: str, i: int) -> tuple[int, float] | None:
+    """(packs, pack_size) if a uniform-pack phrase ends right before index i."""
+    pre = t[max(0, i - 32):i]
+    for pat in _PACK_PATTERNS:
+        m = pat.search(pre)
+        if m:
+            packs, size = int(m.group(1)), float(m.group(2))
+            if packs > 0 and size > 0:
+                return packs, size
+    return None
 
 
 def category_for(species: str) -> str | None:
@@ -120,6 +156,16 @@ def fallback_parse(text: str) -> list[dict]:
                             owner = s
                         else:
                             break
+                    packed = _pack_before(t, i)
+                    if packed:
+                        packs, size = packed
+                        found.append({
+                            "i": i, "species": owner["species"], "category": owner["category"],
+                            "cut": cut, "qty": packs * size, "unit": "lbs",
+                            "storage": storage, "packs": packs, "pack_size": size,
+                        })
+                        start = i + len(k)
+                        continue
                     pre = t[max(0, i - 16):i]
                     qty = 1.0
                     m = re.search(r"(\d+(?:\.\d+)?)\s*(?:lbs?|pounds?|packs?|pkgs?)?\s*$", pre)

@@ -2,7 +2,9 @@
 title: "Keema (Ground Meat)"
 protein: "venison"
 species: ['deer']
-cut: ""
+cut: "ground"
+categories: ['biggame', 'hog', 'bear']
+cuts: ['ground']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

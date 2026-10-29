@@ -2,7 +2,9 @@
 title: "Kasundi Fish Tikka"
 protein: "fish"
 species: []
-cut: ""
+cut: "fillets"
+categories: ['fishlean', 'fishoily']
+cuts: ['fillet']
 cuisine: "Indian"
 cooking_method: "stovetop"
 difficulty: "intermediate"

@@ -9,6 +9,7 @@ import type {
   FreezerItemCreate,
   FreezerItemRead,
   MealPlanResponse,
+  UseResponse,
   YieldResponse,
 } from "./types";
 
@@ -118,6 +119,14 @@ export const api = {
     const res = await rawFetch(`/freezer/${id}`, { method: "DELETE" });
     if (!res.ok && res.status !== 204) throw new Error(`delete failed: ${res.status}`);
   },
+
+  // Pull packs out of the freezer; the batch is removed when it hits zero.
+  use: (id: string, count = 1) =>
+    rawFetch(`/freezer/${id}/use`, {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify({ count }),
+    }).then(asJson<UseResponse>),
 
   parseText: (text: string) =>
     rawFetch("/freezer/parse", {

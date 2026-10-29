@@ -2,7 +2,9 @@
 title: "Ponzu Ginger Goose"
 protein: "goose"
 species: []
-cut: ""
+cut: "breast"
+categories: ['waterfowl']
+cuts: ['breast']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

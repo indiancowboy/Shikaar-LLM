@@ -47,6 +47,11 @@ function FreezerHub() {
     refresh();
   };
 
+  const use = async (id: string) => {
+    await api.use(id);
+    refresh();
+  };
+
   return (
     <div className="wrap">
       <header className="brand">
@@ -65,9 +70,9 @@ function FreezerHub() {
       <CookFirst data={cookFirst} />
 
       <div className="eyebrow">In the freezer</div>
-      <InventoryList items={items} onRemove={remove} />
+      <InventoryList items={items} onRemove={remove} onUse={use} />
 
-      <AskShikaar hasItems={items.length > 0} />
+      <AskShikaar items={items} />
 
       <footer>
         SPECIES-AWARE SHELF LIFE · RAG MEAL PLANNING · TBGH

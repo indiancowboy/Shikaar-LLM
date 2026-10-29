@@ -59,9 +59,19 @@ export function CookFirst({ data }: { data: CookFirstResponse | null }) {
   );
 }
 
-function Item({ item, onRemove }: { item: FreezerItemRead; onRemove: (id: string) => void }) {
+function Item({
+  item,
+  onRemove,
+  onUse,
+}: {
+  item: FreezerItemRead;
+  onRemove: (id: string) => void;
+  onUse: (id: string) => void;
+}) {
   const fill = STATUS_FILL[item.status];
   const pctW = Math.min(item.pct * 100, 100);
+  const packed = !!(item.packs && item.pack_size);
+  const countable = packed || item.unit === "pkgs";
   return (
     <div className={`item s-${item.status}`}>
       <div>
@@ -90,13 +100,31 @@ function Item({ item, onRemove }: { item: FreezerItemRead; onRemove: (id: string
         </div>
       </div>
       <div className="right">
-        <div className="qty">
-          {item.qty}
-          <span className="u"> {item.unit}</span>
+        {packed ? (
+          <div className="qty">
+            {item.packs}
+            <span className="u">
+              {" "}
+              {item.packs === 1 ? "pack" : "packs"} × {item.pack_size} {item.unit}
+            </span>
+            <div className="qty-total">{Math.round(item.qty * 100) / 100} {item.unit} total</div>
+          </div>
+        ) : (
+          <div className="qty">
+            {Math.round(item.qty * 100) / 100}
+            <span className="u"> {item.unit}</span>
+          </div>
+        )}
+        <div className="item-actions">
+          {countable ? (
+            <button className="used" onClick={() => onUse(item.id)}>
+              Used 1
+            </button>
+          ) : null}
+          <button className="del" onClick={() => onRemove(item.id)}>
+            Remove
+          </button>
         </div>
-        <button className="del" onClick={() => onRemove(item.id)}>
-          Remove
-        </button>
       </div>
     </div>
   );
@@ -105,9 +133,11 @@ function Item({ item, onRemove }: { item: FreezerItemRead; onRemove: (id: string
 export function InventoryList({
   items,
   onRemove,
+  onUse,
 }: {
   items: FreezerItemRead[];
   onRemove: (id: string) => void;
+  onUse: (id: string) => void;
 }) {
   if (!items.length) {
     return (
@@ -130,7 +160,7 @@ export function InventoryList({
         <div key={g.status}>
           <div className="group-head">{GROUP_LABEL[g.status]}</div>
           {g.items.map((item) => (
-            <Item key={item.id} item={item} onRemove={onRemove} />
+            <Item key={item.id} item={item} onRemove={onRemove} onUse={onUse} />
           ))}
         </div>
       ))}

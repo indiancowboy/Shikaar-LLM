@@ -2,7 +2,9 @@
 title: "Nandu Rasam with Crab Pakoras"
 protein: "crab"
 species: ['dungeness crab']
-cut: ""
+cut: "whole crab"
+categories: ['shellfish']
+cuts: ['crab_whole']
 cuisine: "South Indian"
 cooking_method: "stovetop"
 difficulty: "intermediate"

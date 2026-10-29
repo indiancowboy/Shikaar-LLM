@@ -36,3 +36,30 @@ def generate(
         ],
     )
     return (resp.choices[0].message.content or "").strip()
+
+
+def generate_json(
+    prompt: str,
+    *,
+    system: str = TBGH_SYSTEM,
+    max_tokens: int = 2000,
+    temperature: float = 0.6,
+) -> dict:
+    """Like `generate`, but forces a JSON object response and parses it.
+    Raises on malformed output so callers can retry."""
+    import json
+
+    resp = get_openai().chat.completions.create(
+        model=GENERATION_MODEL,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+    )
+    data = json.loads(resp.choices[0].message.content or "")
+    if not isinstance(data, dict):
+        raise ValueError("expected a JSON object")
+    return data

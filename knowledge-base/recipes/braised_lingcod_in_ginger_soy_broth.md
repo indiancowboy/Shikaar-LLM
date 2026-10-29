@@ -2,7 +2,9 @@
 title: "Braised Lingcod in Ginger Soy Broth"
 protein: "fish"
 species: ['lingcod']
-cut: ""
+cut: "fillets"
+categories: ['fishlean']
+cuts: ['fillet']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

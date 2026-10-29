@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { CAT_LABEL, pretty, SPECIES_OPTIONS, todayISO } from "@/lib/format";
+import { amountLabel, CAT_LABEL, pretty, SPECIES_OPTIONS, todayISO } from "@/lib/format";
 import type { Category, ParseCandidate, Storage, Unit } from "@/lib/types";
 
 type Mode = "text" | "animal";
@@ -81,6 +81,8 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
           unit: c.unit,
           storage: c.storage,
           date_frozen: frozen,
+          packs: c.packs ?? null,
+          pack_size: c.pack_size ?? null,
         });
       }
       setCandidates(null);
@@ -176,7 +178,9 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
                     {pretty(c.species)} / {pretty(c.cut)}
                   </div>
                   <div className="cmeta">
-                    {c.qty} {c.unit} · {c.storage === "vacuum_sealed" ? "vac-sealed" : "wrapped"} ·{" "}
+                    {amountLabel(c)}
+                    {c.packs ? ` (${c.qty} ${c.unit})` : ""} ·{" "}
+                    {c.storage === "vacuum_sealed" ? "vac-sealed" : "wrapped"} ·{" "}
                     {CAT_LABEL[c.category]}
                   </div>
                 </div>
@@ -206,6 +210,7 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
 function ManualEntry({ onChanged }: { onChanged: () => void }) {
   const [sel, setSel] = useState("whitetail|biggame");
   const [cut, setCut] = useState("");
+  const [packs, setPacks] = useState(""); // blank = not packed
   const [qty, setQty] = useState(1);
   const [unit, setUnit] = useState<Unit>("lbs");
   const [storage, setStorage] = useState<Storage>("vacuum_sealed");
@@ -213,8 +218,14 @@ function ManualEntry({ onChanged }: { onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const packCount = parseInt(packs, 10) > 0 ? parseInt(packs, 10) : null;
+
   const add = async () => {
     const [species, category] = sel.split("|") as [string, Category];
+    if (packCount && unit === "pkgs") {
+      setErr("For packs, give the size of one pack in lbs or kg.");
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -222,12 +233,15 @@ function ManualEntry({ onChanged }: { onChanged: () => void }) {
         species,
         category,
         cut: cut.trim() || "whole / mixed",
-        qty,
+        qty: packCount ? packCount * qty : qty,
         unit,
         storage,
         date_frozen: date,
+        packs: packCount,
+        pack_size: packCount ? qty : null,
       });
       setCut("");
+      setPacks("");
       setQty(1);
       onChanged();
     } catch (e) {
@@ -260,7 +274,19 @@ function ManualEntry({ onChanged }: { onChanged: () => void }) {
           <input value={cut} onChange={(e) => setCut(e.target.value)} placeholder="backstrap, fillet, ground…" />
         </div>
         <div className="field">
-          <label>Qty</label>
+          <label>Packs</label>
+          <input
+            type="number"
+            min={1}
+            step={1}
+            inputMode="numeric"
+            value={packs}
+            placeholder="—"
+            onChange={(e) => setPacks(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label>{packCount ? "Size per pack" : "Qty"}</label>
           <input type="number" min={0} step={0.25} value={qty} onChange={(e) => setQty(parseFloat(e.target.value) || 0)} />
         </div>
         <div className="field">

@@ -21,6 +21,7 @@ SHELF_LIFE_MONTHS: dict[str, dict[str, int]] = {
     "upland":    {"vacuum_sealed": 9,  "wrapped": 6},   # dove, quail, pheasant, turkey
     "fishlean":  {"vacuum_sealed": 6,  "wrapped": 3},   # redfish, catfish, bass, walleye, snapper
     "fishoily":  {"vacuum_sealed": 3,  "wrapped": 2},   # salmon, mackerel, tuna (degrade fast)
+    "shellfish": {"vacuum_sealed": 6,  "wrapped": 3},   # crab, shrimp, lobster, scallops (USDA ~3-6 mo)
 }
 
 DEFAULT_SHELF_LIFE_MONTHS = 9  # fallback when a combo is missing (brief §4)

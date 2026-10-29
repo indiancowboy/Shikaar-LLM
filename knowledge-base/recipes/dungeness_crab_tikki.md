@@ -2,7 +2,9 @@
 title: "Dungeness Crab Tikki"
 protein: "crab"
 species: ['dungeness crab']
-cut: "Whole"
+cut: "crab meat"
+categories: ['shellfish']
+cuts: ['crab_meat', 'crab_whole']
 cuisine: "indian fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

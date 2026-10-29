@@ -8,12 +8,12 @@ from __future__ import annotations
 from datetime import date
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from .domain import shelf_life
 
 Category = Literal[
-    "biggame", "hog", "bear", "waterfowl", "upland", "fishlean", "fishoily"
+    "biggame", "hog", "bear", "waterfowl", "upland", "fishlean", "fishoily", "shellfish"
 ]
 Unit = Literal["lbs", "kg", "pkgs"]
 Storage = Literal["vacuum_sealed", "wrapped"]
@@ -30,6 +30,22 @@ class FreezerItemBase(BaseModel):
     date_frozen: date
     harvest_location: Optional[str] = None
     notes: Optional[str] = None
+    # Uniform packs: `packs` packages of `pack_size` (in `unit`) each. When set,
+    # `qty` is the derived total so weight stats stay correct. Unknown-weight
+    # packages use unit="pkgs" with qty as the count instead.
+    packs: Optional[int] = Field(default=None, ge=1)
+    pack_size: Optional[float] = Field(default=None, gt=0)
+
+    @model_validator(mode="after")
+    def _derive_qty_from_packs(self):
+        if self.packs is None and self.pack_size is None:
+            return self
+        if self.packs is None or self.pack_size is None:
+            raise ValueError("packs and pack_size must be given together")
+        if self.unit == "pkgs":
+            raise ValueError("pack_size needs a weight unit (lbs or kg)")
+        self.qty = round(self.packs * self.pack_size, 3)
+        return self
 
     @field_validator("date_frozen")
     @classmethod
@@ -65,6 +81,8 @@ class FreezerItemUpdate(BaseModel):
     date_frozen: Optional[date] = None
     harvest_location: Optional[str] = None
     notes: Optional[str] = None
+    packs: Optional[int] = Field(default=None, ge=1)
+    pack_size: Optional[float] = Field(default=None, gt=0)
 
 
 class FreezerItem(FreezerItemBase):
@@ -106,4 +124,6 @@ class ParseCandidate(BaseModel):
     qty: float = Field(gt=0)
     unit: Unit
     storage: Storage
+    packs: Optional[int] = Field(default=None, ge=1)
+    pack_size: Optional[float] = Field(default=None, gt=0)
     parsed_offline: bool = False

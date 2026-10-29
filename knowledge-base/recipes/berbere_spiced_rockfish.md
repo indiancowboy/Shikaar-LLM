@@ -2,7 +2,9 @@
 title: "Berbere Spiced Rockfish"
 protein: "fish"
 species: ['rockfish']
-cut: "filets"
+cut: "fillets"
+categories: ['fishlean']
+cuts: ['fillet']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

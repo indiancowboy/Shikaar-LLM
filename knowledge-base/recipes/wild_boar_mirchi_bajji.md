@@ -2,7 +2,9 @@
 title: "Wild Boar Mirchi Bajji"
 protein: "wild boar"
 species: []
-cut: ""
+cut: "ground or sausage"
+categories: ['hog', 'biggame', 'bear']
+cuts: ['ground', 'sausage']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

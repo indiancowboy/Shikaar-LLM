@@ -2,7 +2,9 @@
 title: "Crispy Lingcod with Creamy Tomato Polenta & Cilantro Sauce"
 protein: "fish"
 species: ['lingcod']
-cut: "filets"
+cut: "fillets"
+categories: ['fishlean']
+cuts: ['fillet']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"
