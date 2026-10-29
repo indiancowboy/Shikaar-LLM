@@ -44,6 +44,7 @@ __SPECIES_MAP__
 crab cuts: "whole" (whole crabs, cooked or raw), "clusters" (legs/claws), or
 "picked meat"; shrimp/lobster/crawfish: "whole" or "tails".
 
+- if the note/photo doesn't say which animal an entry is, set "species" to "unknown" (never guess)
 - one entry per distinct cut; "shoulder roast" is ONE entry, not shoulder + roast
 - normalize: "back straps"->backstrap, "the rest ground"->ground, "loins into steaks"->steaks
 - vague amounts (few/some/a couple/the rest) -> sensible estimate; none stated -> 1
@@ -85,17 +86,25 @@ def _num(v, kind):
     return n if n > 0 else None
 
 
-def _coerce(o: dict, *, offline: bool) -> Optional[ParseCandidate]:
-    """Validate/repair one raw entry into a ParseCandidate, or drop it (None)."""
+_UNKNOWN_SPECIES = {"", "unknown", "unknown_animal", "unknown_species", "none", "n/a", "na", "?"}
+
+
+def _coerce(o: dict, *, offline: bool, hint: Optional[species_catalog.Species] = None) -> Optional[ParseCandidate]:
+    """Validate/repair one raw entry into a ParseCandidate, or drop it (None).
+    An entry with no animal takes the hint's species if one was given,
+    otherwise it's kept and flagged `species_unknown` (never guessed)."""
     if not isinstance(o, dict):
         return None
-    species = str(o.get("species", "")).lower().strip().replace(" ", "_")
-    if not species:
-        return None
+    species = str(o.get("species") or "").lower().strip().replace(" ", "_")
+    category = o.get("category") or o.get("cat")
+    unknown = species in _UNKNOWN_SPECIES
+    if unknown and hint:
+        species, category, unknown = hint.key, hint.category, False
+    elif unknown:
+        species, category = "unknown", "biggame"  # placeholder until the user picks
 
     # Snap to the catalog key when we know the animal ("wild boar" -> wild_hog).
-    category = o.get("category") or o.get("cat")
-    known = species_catalog.lookup(species)
+    known = None if unknown else species_catalog.lookup(species)
     if known:
         species = known.key
         if category not in parsing._VALID_CATEGORIES:
@@ -132,14 +141,17 @@ def _coerce(o: dict, *, offline: bool) -> Optional[ParseCandidate]:
         return ParseCandidate(
             species=species, category=category, cut=cut, qty=qty,
             unit=unit, storage=storage, packs=packs, pack_size=pack_size,
-            parsed_offline=offline,
+            parsed_offline=offline, species_unknown=unknown,
         )
     except Exception:
         return None
 
 
-def coerce_all(raw: list[dict], *, offline: bool) -> list[ParseCandidate]:
-    return [c for c in (_coerce(o, offline=offline) for o in raw) if c is not None]
+def coerce_all(raw: list[dict], *, offline: bool, hint: Optional[str] = None) -> list[ParseCandidate]:
+    """`hint` is a free-text note (e.g. "wild hog") used for entries whose
+    animal the model couldn't tell."""
+    hint_species = species_catalog.lookup(hint) if hint else None
+    return [c for c in (_coerce(o, offline=offline, hint=hint_species) for o in raw) if c is not None]
 
 
 def parse_text(text: str, *, attempts: int = 3) -> list[ParseCandidate]:

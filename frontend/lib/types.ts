@@ -40,6 +40,7 @@ export interface ParseCandidate {
   packs?: number | null;
   pack_size?: number | null;
   parsed_offline: boolean;
+  species_unknown?: boolean; // the note/photo didn't say which animal
 }
 
 export interface SpeciesEntry {

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from ..domain import yield_profiles
@@ -111,11 +111,15 @@ def parse_freezer(req: ParseRequest) -> CandidatesResponse:
 
 
 @router.post("/parse-image", response_model=CandidatesResponse)
-async def parse_freezer_image(file: UploadFile = File(...)) -> CandidatesResponse:
+async def parse_freezer_image(
+    file: UploadFile = File(...), hint: Optional[str] = Form(default=None)
+) -> CandidatesResponse:
+    """`hint`: optional note sent with the photo (e.g. "wild hog") — cut sheets
+    often list cuts but not the animal."""
     data = await file.read()
     if not data:
         raise HTTPException(status_code=422, detail="empty image")
-    cands = freezer_image.parse_image(data, file.content_type or "image/jpeg")
+    cands = freezer_image.parse_image(data, file.content_type or "image/jpeg", hint=(hint or "").strip() or None)
     return CandidatesResponse(
         candidates=cands,
         parsed_offline=any(c.parsed_offline for c in cands),

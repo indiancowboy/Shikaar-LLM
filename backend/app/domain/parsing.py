@@ -88,8 +88,11 @@ def fallback_parse(text: str) -> list[dict]:
         {"i": i, "species": hit.key, "category": hit.category}
         for i, hit in species_catalog.find_all(t)
     ]
-    if not sp:
-        return []
+    # No animal named: still read the cuts, owned by "unknown" so the UI asks
+    # which animal ("2 backstraps and 8 lbs ground").
+    no_species = not sp
+    if no_species:
+        sp = [{"i": 0, "species": "unknown", "category": "biggame"}]
 
     storage = "wrapped" if re.search(r"wrapped|butcher paper|freezer paper", t) else "vacuum_sealed"
 
@@ -142,6 +145,10 @@ def fallback_parse(text: str) -> list[dict]:
                         "storage": storage,
                     })
                 start = i + len(k)
+
+    if no_species:
+        found.sort(key=lambda x: x["i"])
+        return [{k: v for k, v in f.items() if k != "i"} for f in found]
 
     # Any species with no cut captured -> log whole, so nothing is dropped.
     covered = {f["species"] for f in found}

@@ -25,7 +25,7 @@ from .freezer_parse import (
 )
 
 
-def _vision_extract(image_bytes: bytes, mime: str) -> list[dict]:
+def _vision_extract(image_bytes: bytes, mime: str, hint: Optional[str] = None) -> list[dict]:
     """One multimodal model attempt. Returns raw entry dicts or raises."""
     import json
 
@@ -41,7 +41,8 @@ def _vision_extract(image_bytes: bytes, mime: str) -> list[dict]:
                 "role": "user",
                 "content": [
                     {"type": "text", "text": EXTRACTION_INSTRUCTIONS
-                        + "\n\nRead every item from this processor cut sheet / package labels."},
+                        + "\n\nRead every item from this processor cut sheet / package labels."
+                        + (f'\nNote from the hunter about this photo: "{hint}"' if hint else "")},
                     {"type": "image_url",
                      "image_url": {"url": f"data:{mime};base64,{b64}"}},
                 ],
@@ -63,12 +64,14 @@ def _ocr_fallback(image_bytes: bytes) -> Optional[list[dict]]:
     return None
 
 
-def parse_image(image_bytes: bytes, mime: str = "image/jpeg", *, attempts: int = 3) -> list[ParseCandidate]:
+def parse_image(
+    image_bytes: bytes, mime: str = "image/jpeg", *, attempts: int = 3, hint: Optional[str] = None
+) -> list[ParseCandidate]:
     """Vision extract -> (OCR seam) -> []. Never raises on model trouble."""
     raw: Optional[list[dict]] = None
     for _ in range(attempts):
         try:
-            raw = _vision_extract(image_bytes, mime)
+            raw = _vision_extract(image_bytes, mime, hint)
             break
         except Exception:
             raw = None
@@ -80,4 +83,4 @@ def parse_image(image_bytes: bytes, mime: str = "image/jpeg", *, attempts: int =
 
     if not raw:
         return []
-    return coerce_all(raw, offline=offline)
+    return coerce_all(raw, offline=offline, hint=hint)

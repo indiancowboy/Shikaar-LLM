@@ -231,3 +231,18 @@ footer { margin-top: 34px; font-family: var(--f-mono); font-size: 10px; color: v
    pushed the manual-entry form wider than the screen. */
 .field { min-width: 0; }
 input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; display: block; }
+
+/* review: editable entries + "which animal?" */
+.chip-body { flex: 1; min-width: 0; background: none; border: none; padding: 0; text-align: left; color: inherit; font-family: inherit; font-size: inherit; font-weight: inherit; letter-spacing: normal; text-transform: none; border-radius: 0; cursor: pointer; }
+.chip-body:active { transform: none; }
+.chip-edit { color: var(--steel); }
+.chip.unknown { border-left-color: var(--soon); }
+.chip.unknown .ctxt { color: var(--soon); }
+.which { background: #2a2416; border: 1px solid #4a3f22; border-radius: 3px; padding: 11px 12px; margin-bottom: 10px; }
+.which-q { font-family: var(--f-head); font-weight: 600; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; color: var(--sand); margin-bottom: 8px; }
+.which-q span { font-family: var(--f-mono); font-size: 10px; font-weight: 400; color: var(--muted); text-transform: none; }
+.which-row { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+.which-row select { width: auto; flex: 0 1 140px; }
+.cand-edit { background: var(--ink); border: 1px solid var(--steel); border-left: 3px solid var(--ember); border-radius: 3px; padding: 12px; margin-bottom: 7px; }
+.cand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cand-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
