@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import SpeciesPicker from "@/components/SpeciesPicker";
 import { amountLabel, CAT_LABEL, pretty, resolveSpecies, speciesKey, todayISO } from "@/lib/format";
 import type { Category, ParseCandidate, SpeciesResponse, Storage, Unit } from "@/lib/types";
 
@@ -136,13 +137,7 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
         <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "end" }}>
           <div className="field" style={{ flex: "1 1 160px" }}>
             <label>Animal / species</label>
-            <input
-              list="species-list"
-              autoComplete="off"
-              value={species}
-              onChange={(e) => setSpecies(e.target.value)}
-              placeholder="black bear"
-            />
+            <SpeciesPicker value={species} onChange={setSpecies} catalog={catalog} placeholder="black bear" />
           </div>
           <div className="field" style={{ width: 110 }}>
             <label>Weight (lbs)</label>
@@ -213,9 +208,6 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
         ) : null}
       </div>
 
-      <datalist id="species-list">
-        {catalog?.species.map((s) => <option key={s.key} value={s.label} />)}
-      </datalist>
       <ManualEntry onChanged={onChanged} catalog={catalog} />
     </>
   );
@@ -291,11 +283,10 @@ function ManualEntry({ onChanged, catalog }: { onChanged: () => void; catalog: S
       <div className="addbar">
         <div className="field">
           <label>Species</label>
-          <input
-            list="species-list"
-            autoComplete="off"
+          <SpeciesPicker
             value={speciesText}
-            onChange={(e) => setSpeciesText(e.target.value)}
+            onChange={setSpeciesText}
+            catalog={catalog}
             placeholder="elk, chicken, walleye…"
           />
           {known ? (

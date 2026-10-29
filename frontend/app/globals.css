@@ -206,3 +206,11 @@ footer { margin-top: 34px; font-family: var(--f-mono); font-size: 10px; color: v
 }
 
 .species-hint { font-family: var(--f-mono); font-size: 10px; color: var(--seafoam); letter-spacing: .06em; margin-top: 3px; }
+
+/* species picker */
+.sp-picker { position: relative; }
+.sp-picker input { width: 100%; }
+.sp-panel { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; min-width: 100%; width: max-content; max-width: min(320px, 90vw); max-height: 300px; overflow-y: auto; background: var(--ink); border: 1px solid var(--steel); border-radius: 3px; box-shadow: 0 10px 28px rgba(0, 0, 0, .5); }
+.sp-group { position: sticky; top: 0; background: var(--panel-solid); font-family: var(--f-mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--ember); padding: 7px 12px 5px; border-bottom: 1px solid var(--line); }
+.sp-opt { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--frost); font-family: var(--f-body); font-weight: 400; font-size: 14px; letter-spacing: normal; text-transform: none; padding: 8px 14px; border-radius: 0; cursor: pointer; }
+.sp-opt:hover, .sp-opt:focus { background: #1f272e; outline: none; }

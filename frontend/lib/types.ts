@@ -52,6 +52,7 @@ export interface SpeciesEntry {
 
 export interface SpeciesResponse {
   species: SpeciesEntry[];
+  groups: string[]; // display order
   categories: { key: Category; label: string; hint: string }[];
 }
 
