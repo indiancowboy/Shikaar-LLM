@@ -29,6 +29,10 @@ YIELD_PROFILES: dict[str, tuple[float, dict[str, float]]] = {
     }),
     "waterfowl": (0.45, {"breasts": 0.55, "legs": 0.20, "whole / mixed": 0.25}),
     "upland": (0.45, {"breasts": 0.60, "legs": 0.25, "whole / mixed": 0.15}),
+    "smallgame": (0.40, {"whole / mixed": 1.0}),
+    # Domestic: dressed bird ~70% of live; beef/lamb/goat ~40% retail cuts.
+    "poultry": (0.70, {"whole / mixed": 1.0}),
+    "redmeat": (0.40, {"steaks": 0.20, "roasts": 0.30, "ground": 0.40, "ribs": 0.10}),
     "fishlean": (0.45, {"fillets": 1.0}),
     "fishoily": (0.50, {"fillets": 1.0}),
     # Crab-based: picked meat is roughly a quarter of whole live weight.

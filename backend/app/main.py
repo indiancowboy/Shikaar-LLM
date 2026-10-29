@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 from .auth import get_owner_id
 from .rag import generation, retrieval
-from .routers import fish, freezer
+from .routers import fish, freezer, species
 from .security import require_access
 
 app = FastAPI(title="Shikaar API", version="0.1.0")
@@ -36,6 +36,9 @@ app.include_router(
 )
 app.include_router(
     fish.router, dependencies=[Depends(require_access), Depends(get_owner_id)]
+)
+app.include_router(
+    species.router, dependencies=[Depends(require_access), Depends(get_owner_id)]
 )
 
 

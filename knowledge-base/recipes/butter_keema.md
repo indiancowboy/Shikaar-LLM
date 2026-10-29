@@ -3,7 +3,7 @@ title: "Butter Keema"
 protein: "wild boar"
 species: ['deer']
 cut: "ground"
-categories: ['hog', 'biggame', 'bear']
+categories: ['hog', 'biggame', 'bear', 'redmeat']
 cuts: ['ground']
 cuisine: "fusion"
 cooking_method: "stovetop"

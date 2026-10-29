@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { amountLabel, CAT_LABEL, pretty, SPECIES_OPTIONS, todayISO } from "@/lib/format";
-import type { Category, ParseCandidate, Storage, Unit } from "@/lib/types";
+import { amountLabel, CAT_LABEL, pretty, resolveSpecies, speciesKey, todayISO } from "@/lib/format";
+import type { Category, ParseCandidate, SpeciesResponse, Storage, Unit } from "@/lib/types";
 
 type Mode = "text" | "animal";
 
@@ -20,6 +20,11 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
   const [offline, setOffline] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [catalog, setCatalog] = useState<SpeciesResponse | null>(null);
+
+  useEffect(() => {
+    api.species().then(setCatalog).catch(() => setCatalog(null));
+  }, []);
 
   async function run(fn: () => Promise<void>) {
     setBusy(true);
@@ -131,7 +136,13 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
         <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "end" }}>
           <div className="field" style={{ flex: "1 1 160px" }}>
             <label>Animal / species</label>
-            <input value={species} onChange={(e) => setSpecies(e.target.value)} placeholder="black bear" />
+            <input
+              list="species-list"
+              autoComplete="off"
+              value={species}
+              onChange={(e) => setSpecies(e.target.value)}
+              placeholder="black bear"
+            />
           </div>
           <div className="field" style={{ width: 110 }}>
             <label>Weight (lbs)</label>
@@ -202,13 +213,24 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
         ) : null}
       </div>
 
-      <ManualEntry onChanged={onChanged} />
+      <datalist id="species-list">
+        {catalog?.species.map((s) => <option key={s.key} value={s.label} />)}
+      </datalist>
+      <ManualEntry onChanged={onChanged} catalog={catalog} />
     </>
   );
 }
 
-function ManualEntry({ onChanged }: { onChanged: () => void }) {
-  const [sel, setSel] = useState("whitetail|biggame");
+// Category picker options when the API catalog isn't loaded yet.
+const FALLBACK_CATEGORIES = (Object.keys(CAT_LABEL) as Category[]).map((key) => ({
+  key,
+  label: CAT_LABEL[key],
+  hint: "",
+}));
+
+function ManualEntry({ onChanged, catalog }: { onChanged: () => void; catalog: SpeciesResponse | null }) {
+  const [speciesText, setSpeciesText] = useState("");
+  const [pickedCat, setPickedCat] = useState<Category | "">("");
   const [cut, setCut] = useState("");
   const [packs, setPacks] = useState(""); // blank = not packed
   const [qty, setQty] = useState(1);
@@ -219,9 +241,19 @@ function ManualEntry({ onChanged }: { onChanged: () => void }) {
   const [err, setErr] = useState<string | null>(null);
 
   const packCount = parseInt(packs, 10) > 0 ? parseInt(packs, 10) : null;
+  const known = resolveSpecies(catalog?.species ?? [], speciesText);
 
   const add = async () => {
-    const [species, category] = sel.split("|") as [string, Category];
+    const category = known?.category ?? pickedCat;
+    if (!speciesText.trim()) {
+      setErr("Type a species first.");
+      return;
+    }
+    if (!category) {
+      setErr("Pick a category for this species.");
+      return;
+    }
+    const species = known ? known.key : speciesKey(speciesText);
     if (packCount && unit === "pkgs") {
       setErr("For packs, give the size of one pack in lbs or kg.");
       return;
@@ -241,6 +273,8 @@ function ManualEntry({ onChanged }: { onChanged: () => void }) {
         pack_size: packCount ? qty : null,
       });
       setCut("");
+      setSpeciesText("");
+      setPickedCat("");
       setPacks("");
       setQty(1);
       onChanged();
@@ -257,18 +291,35 @@ function ManualEntry({ onChanged }: { onChanged: () => void }) {
       <div className="addbar">
         <div className="field">
           <label>Species</label>
-          <select value={sel} onChange={(e) => setSel(e.target.value)}>
-            {SPECIES_OPTIONS.map((g) => (
-              <optgroup key={g.group} label={g.group}>
-                {g.items.map(([s, label, cat]) => (
-                  <option key={s} value={`${s}|${cat}`}>
-                    {label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+          <input
+            list="species-list"
+            autoComplete="off"
+            value={speciesText}
+            onChange={(e) => setSpeciesText(e.target.value)}
+            placeholder="elk, chicken, walleye…"
+          />
+          {known ? (
+            <div className="species-hint">
+              {known.label} · {CAT_LABEL[known.category]}
+            </div>
+          ) : null}
         </div>
+        {speciesText.trim() && !known ? (
+          <div className="field">
+            <label>Category</label>
+            <select value={pickedCat} onChange={(e) => setPickedCat(e.target.value as Category)}>
+              <option value="" disabled>
+                Pick one…
+              </option>
+              {(catalog?.categories ?? FALLBACK_CATEGORIES).map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
+                  {c.hint ? ` (${c.hint})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         <div className="field">
           <label>Cut</label>
           <input value={cut} onChange={(e) => setCut(e.target.value)} placeholder="backstrap, fillet, ground…" />

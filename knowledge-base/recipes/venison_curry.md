@@ -3,7 +3,7 @@ title: "Venison Curry"
 protein: "venison"
 species: ['deer']
 cut: "tenderloin"
-categories: ['biggame']
+categories: ['biggame', 'redmeat']
 cuts: ['tender']
 cuisine: "fusion"
 cooking_method: "sous vide"

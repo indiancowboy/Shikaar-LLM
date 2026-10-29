@@ -12,6 +12,7 @@ from typing import Optional
 
 from ..config import GENERATION_MODEL, get_openai
 from ..domain import parsing
+from ..domain import species as species_catalog
 from ..models import ParseCandidate
 
 _VALID_UNITS = {"lbs", "kg", "pkgs"}
@@ -23,7 +24,7 @@ EXTRACTION_SYSTEM = (
 
 EXTRACTION_INSTRUCTIONS = """Return a JSON object: {"entries": [ ... ]}.
 Each entry: {"species": string (lowercase, underscores), "category": one of
-["biggame","hog","bear","waterfowl","upland","fishlean","fishoily","shellfish"], "cut": string,
+[__CATEGORIES__], "cut": string,
 "qty": number, "unit": one of ["lbs","kg","pkgs"], "storage": one of
 ["vacuum_sealed","wrapped"], "packs": integer or null, "pack_size": number or null}.
 
@@ -36,10 +37,10 @@ weight's unit, and "qty" to packs * pack_size:
 Count with no weight -> packs null, unit "pkgs", qty = the count ("two backstraps").
 Weight with no count -> packs null, qty = the weight ("8 lbs ground").
 
-category map: deer/elk/nilgai/antelope=biggame; hog/boar=hog; bear=bear;
-duck/goose/teal=waterfowl; dove/quail/pheasant/turkey=upland;
-redfish/catfish/bass/walleye/snapper=fishlean; salmon/mackerel/tuna=fishoily;
-crab/shrimp/prawns/lobster/crawfish/scallops/clams/mussels/oysters=shellfish.
+species + category: use the species key from this list when the animal is on
+it ("bull elk" -> elk, "snow geese" -> snow_goose); otherwise a short lowercase
+name and the closest category.
+__SPECIES_MAP__
 crab cuts: "whole" (whole crabs, cooked or raw), "clusters" (legs/claws), or
 "picked meat"; shrimp/lobster/crawfish: "whole" or "tails".
 
@@ -48,6 +49,11 @@ crab cuts: "whole" (whole crabs, cooked or raw), "clusters" (legs/claws), or
 - vague amounts (few/some/a couple/the rest) -> sensible estimate; none stated -> 1
 - default storage vacuum_sealed unless wrapped / butcher paper / freezer paper
 """
+EXTRACTION_INSTRUCTIONS = (
+    EXTRACTION_INSTRUCTIONS
+    .replace("__CATEGORIES__", ",".join(f'"{c}"' for c in species_catalog.CATEGORIES))
+    .replace("__SPECIES_MAP__", species_catalog.prompt_category_map())
+)
 
 
 def _llm_extract(text: str) -> list[dict]:
@@ -87,9 +93,15 @@ def _coerce(o: dict, *, offline: bool) -> Optional[ParseCandidate]:
     if not species:
         return None
 
+    # Snap to the catalog key when we know the animal ("wild boar" -> wild_hog).
     category = o.get("category") or o.get("cat")
+    known = species_catalog.lookup(species)
+    if known:
+        species = known.key
+        if category not in parsing._VALID_CATEGORIES:
+            category = known.category
     if category not in parsing._VALID_CATEGORIES:
-        category = parsing.category_for(species) or "biggame"
+        category = "biggame"
 
     cut = str(o.get("cut") or "whole / mixed").strip() or "whole / mixed"
 

@@ -1,4 +1,4 @@
-import type { Category, Status } from "./types";
+import type { Category, SpeciesEntry, Status } from "./types";
 
 export const pretty = (s: string) =>
   s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -31,75 +31,41 @@ export const GROUP_LABEL: Record<Status, string> = {
 
 export const CAT_LABEL: Record<Category, string> = {
   biggame: "BIG GAME",
-  hog: "HOG",
+  hog: "HOG / PORK",
   bear: "BEAR",
   waterfowl: "WATERFOWL",
   upland: "UPLAND",
+  smallgame: "SMALL GAME",
+  poultry: "POULTRY",
+  redmeat: "RED MEAT",
   fishlean: "FISH · LEAN",
   fishoily: "FISH · OILY",
   shellfish: "SHELLFISH",
 };
 
-// species options for the manual form, value = "species|category" (brief §11).
-export const SPECIES_OPTIONS: { group: string; items: [string, string, Category][] }[] = [
-  {
-    group: "Big game (lean)",
-    items: [
-      ["whitetail", "Whitetail deer", "biggame"],
-      ["mule_deer", "Mule deer", "biggame"],
-      ["elk", "Elk", "biggame"],
-      ["nilgai", "Nilgai", "biggame"],
-      ["antelope", "Antelope", "biggame"],
-    ],
-  },
-  { group: "Bear (fatty)", items: [["black_bear", "Black bear", "bear"]] },
-  { group: "Hog (fatty)", items: [["wild_hog", "Wild hog", "hog"]] },
-  {
-    group: "Waterfowl (fatty)",
-    items: [
-      ["duck", "Duck", "waterfowl"],
-      ["goose", "Goose", "waterfowl"],
-      ["teal", "Teal", "waterfowl"],
-    ],
-  },
-  {
-    group: "Upland",
-    items: [
-      ["dove", "Dove", "upland"],
-      ["quail", "Quail", "upland"],
-      ["pheasant", "Pheasant", "upland"],
-      ["turkey", "Wild turkey", "upland"],
-    ],
-  },
-  {
-    group: "Fish (lean)",
-    items: [
-      ["redfish", "Redfish", "fishlean"],
-      ["catfish", "Catfish", "fishlean"],
-      ["bass", "Bass", "fishlean"],
-      ["walleye", "Walleye", "fishlean"],
-      ["snapper", "Snapper", "fishlean"],
-    ],
-  },
-  {
-    group: "Fish (oily)",
-    items: [
-      ["salmon", "Salmon", "fishoily"],
-      ["mackerel", "Mackerel", "fishoily"],
-      ["tuna", "Tuna", "fishoily"],
-    ],
-  },
-  {
-    group: "Shellfish",
-    items: [
-      ["crab", "Crab (Dungeness, blue…)", "shellfish"],
-      ["shrimp", "Shrimp / prawns", "shellfish"],
-      ["lobster", "Lobster", "shellfish"],
-      ["crawfish", "Crawfish", "shellfish"],
-      ["scallops", "Scallops", "shellfish"],
-      ["clams", "Clams", "shellfish"],
-      ["mussels", "Mussels", "shellfish"],
-      ["oysters", "Oysters", "shellfish"],
-    ],
-  },
-];
+const norm = (s: string) => s.toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ").trim();
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Match typed text to a known species, like the backend: exact key/label/alias,
+ *  else the longest alias found as a whole word ("bull elk" -> Elk). */
+export function resolveSpecies(list: SpeciesEntry[], text: string): SpeciesEntry | null {
+  const t = norm(text);
+  if (!t) return null;
+  for (const s of list) {
+    if (norm(s.key) === t || norm(s.label) === t || s.aliases.includes(t)) return s;
+  }
+  let best: SpeciesEntry | null = null;
+  let bestLen = 0;
+  for (const s of list) {
+    for (const a of s.aliases) {
+      if (a.length > bestLen && new RegExp(`\\b${escapeRe(a)}(?:e?s)?\\b`).test(t)) {
+        best = s;
+        bestLen = a.length;
+      }
+    }
+  }
+  return best;
+}
+
+/** Storage key for a species nobody's catalogued yet. */
+export const speciesKey = (text: string) => norm(text).replace(/ /g, "_");

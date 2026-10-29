@@ -27,17 +27,18 @@ CUT_TYPES = {
 
 # Recipe categories = freezer categories, plus shellfish (recipes only for now).
 RECIPE_CATEGORIES = {
-    "biggame", "hog", "bear", "waterfowl", "upland", "fishlean", "fishoily", "shellfish",
+    "biggame", "hog", "bear", "smallgame", "waterfowl", "upland", "poultry", "redmeat",
+    "fishlean", "fishoily", "shellfish",
 }
 
 _FISH = {"fishlean", "fishoily"}
-_BIRD = {"waterfowl", "upland"}
+_BIRD = {"waterfowl", "upland", "poultry"}
 
 # (pattern, cut type), checked in order — compound/specific terms first.
 _MEAT_RULES: list[tuple[str, str]] = [
     (r"sausage|brat|chorizo|kielbasa|link", "sausage"),
     (r"ground|mince|burger|keema|grind", "ground"),
-    (r"roast|shoulder|shank|rib|neck|belly|brisket|stew|chuck|ham|round", "braise"),
+    (r"roast|shoulder|shank|rib|neck|belly|brisket|stew|chuck|ham|round|leg|quarter|saddle", "braise"),
     (r"back ?strap|tenderloin|loin|steak|chop|medallion|filet mignon", "tender"),
 ]
 _BIRD_RULES: list[tuple[str, str]] = [
