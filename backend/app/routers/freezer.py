@@ -23,6 +23,7 @@ from ..auth import get_owner_id
 from ..services import cook_first as cook_first_svc
 from ..services import freezer_image, freezer_parse, inventory
 from ..services import meal_plan as meal_plan_svc
+from ..services.usage import require_ai_quota
 
 router = APIRouter(prefix="/freezer", tags=["freezer"])
 
@@ -101,7 +102,7 @@ class CandidatesResponse(BaseModel):
     parsed_offline: bool = False
 
 
-@router.post("/parse", response_model=CandidatesResponse)
+@router.post("/parse", response_model=CandidatesResponse, dependencies=[Depends(require_ai_quota)])
 def parse_freezer(req: ParseRequest) -> CandidatesResponse:
     cands = freezer_parse.parse_text(req.text)
     return CandidatesResponse(
@@ -110,7 +111,7 @@ def parse_freezer(req: ParseRequest) -> CandidatesResponse:
     )
 
 
-@router.post("/parse-image", response_model=CandidatesResponse)
+@router.post("/parse-image", response_model=CandidatesResponse, dependencies=[Depends(require_ai_quota)])
 async def parse_freezer_image(
     file: UploadFile = File(...), hint: Optional[str] = Form(default=None)
 ) -> CandidatesResponse:
@@ -161,7 +162,7 @@ class MealPlanRequest(BaseModel):
     query: Optional[str] = None
 
 
-@router.post("/meal-plan")
+@router.post("/meal-plan", dependencies=[Depends(require_ai_quota)])
 def meal_plan(
     req: Optional[MealPlanRequest] = None, owner_id: str = Depends(get_owner_id)
 ) -> dict:

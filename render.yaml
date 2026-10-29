@@ -36,3 +36,7 @@ services:
         sync: false
       - key: SUPABASE_JWT_SECRET
         sync: false
+      # Daily cap per user on AI actions (parse, photo, meal plan, ask) to keep
+      # the OpenAI bill in check. 0 turns it off.
+      - key: AI_DAILY_LIMIT
+        value: "20"
