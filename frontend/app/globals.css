@@ -214,3 +214,15 @@ footer { margin-top: 34px; font-family: var(--f-mono); font-size: 10px; color: v
 .sp-group { position: sticky; top: 0; background: var(--panel-solid); font-family: var(--f-mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--ember); padding: 7px 12px 5px; border-bottom: 1px solid var(--line); }
 .sp-opt { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--frost); font-family: var(--f-body); font-weight: 400; font-size: 14px; letter-spacing: normal; text-transform: none; padding: 8px 14px; border-radius: 0; cursor: pointer; }
 .sp-opt:hover, .sp-opt:focus { background: #1f272e; outline: none; }
+
+/* branding */
+.brand-logo { display: block; height: 62px; width: auto; margin-bottom: 8px; }
+.gate-logo { display: block; width: 190px; height: auto; margin: 44px auto 0; }
+.tbgh { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 34px; }
+.tbgh img { display: block; height: auto; }
+.tbgh a { transition: transform .15s; }
+.tbgh a:hover { transform: scale(1.04); }
+.tbgh-by { font-family: var(--f-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.tbgh-social { display: flex; gap: 18px; }
+.tbgh-social a { color: var(--muted); display: flex; }
+.tbgh-social a:hover { color: var(--ember); }

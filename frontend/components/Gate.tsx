@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ShikaarLogo, TbghCredit } from "@/components/Brand";
 import { api } from "@/lib/api";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 
@@ -77,10 +78,11 @@ function AccountGate({ children }: { children: React.ReactNode }) {
   if (state === "signedout") {
     return (
       <div className="wrap">
-        <div className="ask" style={{ maxWidth: 420, margin: "60px auto" }}>
+        <ShikaarLogo className="gate-logo" />
+        <div className="ask" style={{ maxWidth: 420, margin: "20px auto 0" }}>
           <h3>
             <span className="dot" />
-            Shikaar — Cold Storage
+            Cold Storage
           </h3>
           {sent ? (
             <p>
@@ -122,6 +124,7 @@ function AccountGate({ children }: { children: React.ReactNode }) {
           )}
           {err ? <div className="banner-err">{err}</div> : null}
         </div>
+        <TbghCredit size={72} />
       </div>
     );
   }
@@ -194,10 +197,11 @@ function PasswordGate({ children }: { children: React.ReactNode }) {
   if (state === "need") {
     return (
       <div className="wrap">
-        <div className="ask" style={{ maxWidth: 420, margin: "60px auto" }}>
+        <ShikaarLogo className="gate-logo" />
+        <div className="ask" style={{ maxWidth: 420, margin: "20px auto 0" }}>
           <h3>
             <span className="dot" />
-            Shikaar — Cold Storage
+            Cold Storage
           </h3>
           <p>This demo is password-protected. Enter the shared password to continue.</p>
           <div className="field" style={{ marginBottom: 12 }}>
@@ -219,6 +223,7 @@ function PasswordGate({ children }: { children: React.ReactNode }) {
           </button>
           {err ? <div className="banner-err">{err}</div> : null}
         </div>
+        <TbghCredit size={72} />
       </div>
     );
   }

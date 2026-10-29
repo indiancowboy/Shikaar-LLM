@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import AddToFreezer from "@/components/AddToFreezer";
 import AskShikaar from "@/components/AskShikaar";
+import { ShikaarLogo, TbghCredit } from "@/components/Brand";
 import Gate from "@/components/Gate";
 import { CookFirst, InventoryList, StatStrip } from "@/components/Inventory";
 import { api } from "@/lib/api";
@@ -56,7 +57,7 @@ function FreezerHub() {
     <div className="wrap">
       <header className="brand">
         <div>
-          <div className="mark">Shikaar · Two Brown Guys Hunt</div>
+          <ShikaarLogo className="brand-logo" />
           <div className="title">Cold Storage</div>
           <div className="sub">FREEZER MANIFEST — species-aware shelf life</div>
         </div>
@@ -73,6 +74,8 @@ function FreezerHub() {
       <InventoryList items={items} onRemove={remove} onUse={use} />
 
       <AskShikaar items={items} />
+
+      <TbghCredit />
 
       <footer>
         SPECIES-AWARE SHELF LIFE · RAG MEAL PLANNING · TBGH
