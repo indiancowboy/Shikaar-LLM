@@ -5,7 +5,12 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Accept either name: the Vercel Supabase integration provisions
+// NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (new `sb_publishable_` keys).
+// Each is referenced literally so Next.js inlines it at build time.
+const anon =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 /** True when real accounts are configured (vs the per-browser demo). */
 export const isSupabaseConfigured = Boolean(url && anon);
