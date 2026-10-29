@@ -81,11 +81,13 @@ async function asJson<T>(res: Response): Promise<T> {
     let detail = res.statusText;
     try {
       const body = await res.json();
-      detail = body?.detail ? JSON.stringify(body.detail) : detail;
+      if (typeof body?.detail === "string") detail = body.detail;
+      else if (body?.detail) detail = JSON.stringify(body.detail);
     } catch {
       /* non-JSON error body */
     }
-    throw new Error(`${res.status}: ${detail}`);
+    // The daily AI limit message is written for people; show it as-is.
+    throw new Error(res.status === 429 ? detail : `${res.status}: ${detail}`);
   }
   return res.json() as Promise<T>;
 }

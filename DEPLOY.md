@@ -114,6 +114,16 @@ password, and a user's freezer follows them across phone and laptop.
 > Rollback is trivial: unset the three `SUPABASE_*`/`DATABASE_URL` vars (and
 > restore `SHIKAAR_ACCESS_PASSWORD`) to drop back to the demo.
 
+## AI usage limit
+
+Each user gets **20 AI actions per day** (Parse it, Photo, Plan my week, and
+`/ask`); the 21st gets a friendly "you've used today's AI actions" message.
+Adding items by hand, Used 1, Estimate cuts and Cook First never count.
+Counts live in the `ai_usage` table next to the freezer and reset each UTC day.
+
+Change it with `AI_DAILY_LIMIT` on the Render service (e.g. `50`), or set it to
+`0` to turn the limit off. No redeploy of code needed, just save the variable.
+
 ## Local dev (unchanged)
 
 ```bash
