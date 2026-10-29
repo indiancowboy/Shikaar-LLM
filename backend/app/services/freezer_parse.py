@@ -11,7 +11,7 @@ import json
 from typing import Optional
 
 from ..config import GENERATION_MODEL, get_openai
-from ..domain import parsing
+from ..domain import cuts, parsing
 from ..domain import species as species_catalog
 from ..models import ParseCandidate
 
@@ -126,6 +126,7 @@ def _coerce(o: dict, *, offline: bool) -> Optional[ParseCandidate]:
         qty, packs, pack_size = float(packs), None, None
     else:
         packs = pack_size = None
+    qty, packs, pack_size = cuts.default_packs(category, cut, species, qty, unit, packs, pack_size)
 
     try:
         return ParseCandidate(

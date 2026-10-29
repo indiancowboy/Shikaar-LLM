@@ -9,6 +9,7 @@ to be reviewed and edited before committing. Tune the table here, not in logic.
 from __future__ import annotations
 
 from . import parsing
+from .cuts import default_packs
 
 # live weight -> field-dressed weight (big-game approximation).
 FIELD_DRESS_FRACTION = 0.78
@@ -73,9 +74,11 @@ def estimate(species: str, weight: float, dressed: bool = False) -> dict:
         lbs = round(edible_lbs * share / total_share, 1)
         if lbs < 0.1:
             continue
+        qty, packs, pack_size = default_packs(category, cut, norm_species, lbs, "lbs", None, None)
         candidates.append({
             "species": norm_species, "category": category, "cut": cut,
-            "qty": lbs, "unit": "lbs", "storage": "vacuum_sealed",
+            "qty": qty, "unit": "lbs", "storage": "vacuum_sealed",
+            "packs": packs, "pack_size": pack_size,
         })
 
     return {
