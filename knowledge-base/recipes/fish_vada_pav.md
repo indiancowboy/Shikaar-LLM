@@ -2,7 +2,9 @@
 title: "Fish Vada Pav"
 protein: "fish"
 species: ['rockfish']
-cut: "filets"
+cut: "fillets (minced)"
+categories: ['fishlean']
+cuts: ['fillet']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

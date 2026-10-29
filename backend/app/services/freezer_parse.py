@@ -25,7 +25,16 @@ EXTRACTION_INSTRUCTIONS = """Return a JSON object: {"entries": [ ... ]}.
 Each entry: {"species": string (lowercase, underscores), "category": one of
 ["biggame","hog","bear","waterfowl","upland","fishlean","fishoily"], "cut": string,
 "qty": number, "unit": one of ["lbs","kg","pkgs"], "storage": one of
-["vacuum_sealed","wrapped"]}.
+["vacuum_sealed","wrapped"], "packs": integer or null, "pack_size": number or null}.
+
+packs: when the note gives a COUNT of packages AND a weight per package, set
+"packs" to the count, "pack_size" to the weight of ONE package, "unit" to that
+weight's unit, and "qty" to packs * pack_size:
+  "10 2 lb packs of ground" -> packs 10, pack_size 2, unit "lbs", qty 20
+  "4 roasts about 3 lbs each" -> packs 4, pack_size 3, unit "lbs", qty 12
+  "3 packs of steaks totaling 6 lbs" -> packs 3, pack_size 2, unit "lbs", qty 6
+Count with no weight -> packs null, unit "pkgs", qty = the count ("two backstraps").
+Weight with no count -> packs null, qty = the weight ("8 lbs ground").
 
 category map: deer/elk/nilgai/antelope=biggame; hog/boar=hog; bear=bear;
 duck/goose/teal=waterfowl; dove/quail/pheasant/turkey=upland;
@@ -58,6 +67,15 @@ def _llm_extract(text: str) -> list[dict]:
     return entries
 
 
+def _num(v, kind):
+    """A positive number of `kind` (int/float), or None."""
+    try:
+        n = kind(v)
+    except (TypeError, ValueError):
+        return None
+    return n if n > 0 else None
+
+
 def _coerce(o: dict, *, offline: bool) -> Optional[ParseCandidate]:
     """Validate/repair one raw entry into a ParseCandidate, or drop it (None)."""
     if not isinstance(o, dict):
@@ -82,10 +100,23 @@ def _coerce(o: dict, *, offline: bool) -> Optional[ParseCandidate]:
     unit = o.get("unit") if o.get("unit") in _VALID_UNITS else "lbs"
     storage = "wrapped" if o.get("storage") == "wrapped" else "vacuum_sealed"
 
+    # Packs are kept only when both count and per-pack weight are usable; the
+    # total is recomputed from them rather than trusting the model's arithmetic.
+    packs, pack_size = _num(o.get("packs"), int), _num(o.get("pack_size"), float)
+    if packs and pack_size:
+        if unit == "pkgs":
+            unit = "lbs"
+        qty = round(packs * pack_size, 3)
+    elif packs and unit == "pkgs":
+        qty, packs, pack_size = float(packs), None, None
+    else:
+        packs = pack_size = None
+
     try:
         return ParseCandidate(
             species=species, category=category, cut=cut, qty=qty,
-            unit=unit, storage=storage, parsed_offline=offline,
+            unit=unit, storage=storage, packs=packs, pack_size=pack_size,
+            parsed_offline=offline,
         )
     except Exception:
         return None

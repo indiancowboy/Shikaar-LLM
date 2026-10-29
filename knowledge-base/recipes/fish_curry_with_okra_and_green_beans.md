@@ -2,7 +2,9 @@
 title: "Fish Curry with Okra and Green Beans"
 protein: "fish"
 species: []
-cut: "filets"
+cut: "fillets"
+categories: ['fishlean', 'fishoily']
+cuts: ['fillet']
 cuisine: "fusion"
 cooking_method: "grill + stovetop"
 difficulty: "intermediate"

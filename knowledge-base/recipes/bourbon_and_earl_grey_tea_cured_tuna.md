@@ -2,7 +2,9 @@
 title: "Bourbon and Earl Grey Tea Cured Tuna"
 protein: "tuna"
 species: []
-cut: "filets"
+cut: "fillets"
+categories: ['fishoily']
+cuts: ['fillet']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

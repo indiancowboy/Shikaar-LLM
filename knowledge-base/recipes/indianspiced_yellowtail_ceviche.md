@@ -2,7 +2,9 @@
 title: "Indian-Spiced Yellowtail Ceviche"
 protein: "fish"
 species: ['yellowtail']
-cut: "loin"
+cut: "loin / fillets"
+categories: ['fishoily', 'fishlean']
+cuts: ['fillet']
 cuisine: "Latin"
 cooking_method: "stovetop"
 difficulty: "intermediate"

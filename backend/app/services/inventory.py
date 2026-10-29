@@ -26,8 +26,12 @@ _DEFAULT_DB = os.path.join(
 # FreezerItem fields (client_id is stored alongside but is not a model field).
 _ITEM_COLUMNS = (
     "id", "species", "category", "cut", "qty", "unit", "storage",
-    "date_frozen", "harvest_location", "notes",
+    "date_frozen", "harvest_location", "notes", "packs", "pack_size",
 )
+
+# Columns added after the original schema: (name, SQL type). Older DBs get them
+# via ALTER TABLE on connect.
+_ADDED_COLUMNS = (("client_id", "TEXT"), ("packs", "INTEGER"), ("pack_size", "REAL"))
 
 
 def _use_pg() -> bool:
@@ -51,13 +55,14 @@ def _conn() -> Iterator[sqlite3.Connection]:
             """CREATE TABLE IF NOT EXISTS freezer_items (
                 id TEXT PRIMARY KEY, client_id TEXT, species TEXT, category TEXT,
                 cut TEXT, qty REAL, unit TEXT, storage TEXT, date_frozen TEXT,
-                harvest_location TEXT, notes TEXT
+                harvest_location TEXT, notes TEXT, packs INTEGER, pack_size REAL
             )"""
         )
-        # Migrate older DBs that predate the client_id column.
+        # Migrate older DBs that predate later columns.
         cols = [r[1] for r in con.execute("PRAGMA table_info(freezer_items)")]
-        if "client_id" not in cols:
-            con.execute("ALTER TABLE freezer_items ADD COLUMN client_id TEXT")
+        for name, sql_type in _ADDED_COLUMNS:
+            if name not in cols:
+                con.execute(f"ALTER TABLE freezer_items ADD COLUMN {name} {sql_type}")
         yield con
         con.commit()
     finally:
@@ -79,7 +84,7 @@ def _insert(con: sqlite3.Connection, item: FreezerItem, client_id: str) -> None:
         (
             client_id, item.id, item.species, item.category, item.cut, item.qty,
             item.unit, item.storage, item.date_frozen.isoformat(),
-            item.harvest_location, item.notes,
+            item.harvest_location, item.notes, item.packs, item.pack_size,
         ),
     )
 

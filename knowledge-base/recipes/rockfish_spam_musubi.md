@@ -2,7 +2,9 @@
 title: "Rockfish Spam Musubi"
 protein: "fish"
 species: ['rockfish']
-cut: ""
+cut: "fillets (minced)"
+categories: ['fishlean']
+cuts: ['fillet']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

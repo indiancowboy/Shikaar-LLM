@@ -2,7 +2,9 @@
 title: "Wild Boar Breakfast Pizza"
 protein: "wild boar"
 species: []
-cut: ""
+cut: "breakfast sausage"
+categories: ['hog', 'biggame']
+cuts: ['sausage']
 cuisine: "fusion"
 cooking_method: "stovetop"
 difficulty: "intermediate"

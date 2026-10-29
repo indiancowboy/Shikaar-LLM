@@ -2,7 +2,9 @@
 title: "Bluefin Tuna Butter Masala"
 protein: "tuna"
 species: ['bluefin tuna']
-cut: ""
+cut: "loin / fillets"
+categories: ['fishoily']
+cuts: ['fillet']
 cuisine: "Indian"
 cooking_method: "stovetop"
 difficulty: "intermediate"

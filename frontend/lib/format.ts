@@ -5,6 +5,14 @@ export const pretty = (s: string) =>
 
 export const todayISO = () => new Date().toISOString().slice(0, 10);
 
+const num = (n: number) => String(Math.round(n * 100) / 100);
+
+/** "10 packs × 2 lbs" for packed batches, else "8 lbs" / "2 pkgs". */
+export const amountLabel = (a: { qty: number; unit: string; packs?: number | null; pack_size?: number | null }) =>
+  a.packs && a.pack_size
+    ? `${a.packs} ${a.packs === 1 ? "pack" : "packs"} × ${num(a.pack_size)} ${a.unit}`
+    : `${num(a.qty)} ${a.unit}`;
+
 export const STATUS_FILL: Record<Status, string> = {
   prime: "var(--prime)",
   good: "var(--good)",

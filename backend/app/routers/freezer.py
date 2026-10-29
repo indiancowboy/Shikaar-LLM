@@ -57,6 +57,40 @@ def remove_freezer(item_id: str, owner_id: str = Depends(get_owner_id)):
         raise HTTPException(status_code=404, detail="item not found")
 
 
+class UseRequest(BaseModel):
+    count: int = Field(default=1, ge=1)
+
+
+class UseResponse(BaseModel):
+    removed: bool  # True when the batch was used up and deleted
+    item: Optional[FreezerItemRead] = None
+
+
+@router.post("/{item_id}/use", response_model=UseResponse)
+def use_freezer(
+    item_id: str, req: Optional[UseRequest] = None, owner_id: str = Depends(get_owner_id)
+) -> UseResponse:
+    """Pull packs out of the freezer. Packed batches drop by `count` packs and
+    unknown-weight packages (unit "pkgs") by `count`; a batch that hits zero —
+    or a bulk weight item, which is used whole — is removed."""
+    count = req.count if req else 1
+    item = inventory.get(item_id, owner_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="item not found")
+
+    if item.packs is not None:
+        left, patch = item.packs - count, {"packs": item.packs - count}
+    elif item.unit == "pkgs":
+        left, patch = item.qty - count, {"qty": item.qty - count}
+    else:
+        left, patch = 0, {}
+
+    if left <= 0:
+        inventory.delete(item_id, owner_id)
+        return UseResponse(removed=True)
+    return UseResponse(removed=False, item=inventory.update(item_id, patch, owner_id).with_status())
+
+
 # ------------------------------------------------------------- candidates -----
 class ParseRequest(BaseModel):
     text: str = Field(min_length=1)

@@ -118,6 +118,8 @@ def ingest_recipes():
             "cuisine": metadata.get("cuisine", "N/A"),
             "cooking_method": metadata.get("cooking_method", "N/A"),
             "difficulty": metadata.get("difficulty", "N/A"),
+            "categories": metadata.get("categories", []),
+            "cuts": metadata.get("cuts", []),
             "content_type": "recipe",
             "source_file": recipe_file.name,
             "text": content[:500]
