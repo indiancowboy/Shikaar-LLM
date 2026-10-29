@@ -3,8 +3,8 @@
 // Social links. An empty link hides its icon.
 export const TBGH_LINKS = {
   website: "https://twobrownguyshunt.com",
-  youtube: "",
-  instagram: "",
+  youtube: "https://www.youtube.com/@twobrownguyshunt",
+  instagram: "https://www.instagram.com/twobrownguyshunt",
 };
 
 export function ShikaarLogo({ className }: { className?: string }) {
