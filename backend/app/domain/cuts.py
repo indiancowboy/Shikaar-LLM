@@ -89,6 +89,29 @@ CONVERSIONS: dict[tuple[str, str], str] = {
 }
 
 
+_ONE_LB_PACK_CUTS = {"ground", "sausage"}
+
+
+def default_packs(
+    category: str,
+    cut: str,
+    species: str,
+    qty: float,
+    unit: str,
+    packs: Optional[int],
+    pack_size: Optional[float],
+) -> tuple[float, Optional[int], Optional[float]]:
+    """Ground meat and sausage get packed by the pound, so a bare weight
+    ("15 lbs ground") becomes 1 lb packs. Returns (qty, packs, pack_size);
+    anything with packs already, or not in lbs, comes back unchanged."""
+    if packs is not None or unit != "lbs":
+        return qty, packs, pack_size
+    if cut_type_for(category, cut, species) not in _ONE_LB_PACK_CUTS:
+        return qty, packs, pack_size
+    n = max(1, round(qty))
+    return float(n), n, 1.0
+
+
 def match_kind(item_cut_type: Optional[str], recipe_cuts: list[str]) -> tuple[Optional[str], Optional[str]]:
     """How an item's cut fits a recipe: ("exact", None), ("adapt", prep note),
     or (None, None) when it doesn't fit."""
