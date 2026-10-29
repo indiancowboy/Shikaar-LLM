@@ -159,3 +159,17 @@ def test_species_endpoint():
     assert {c["key"] for c in body["categories"]} == set(species.CATEGORIES)
     elk = next(s for s in body["species"] if s["key"] == "elk")
     assert elk["category"] == "biggame" and "wapiti" in elk["aliases"]
+
+
+def test_groups_cover_catalog_and_domestic_holds_farm_meats():
+    assert {s.group for s in species.catalog()} == set(species.GROUPS)
+    assert species.GROUPS[-1] == "Domestic"
+    domestic = {s.key for s in species.catalog() if s.group == "Domestic"}
+    assert {"chicken", "beef", "lamb", "goat", "pork", "pekin_duck"} <= domestic
+    # group is display-only: pork still keeps like hog
+    assert species.by_key("pork").category == "hog"
+    assert species.lookup("pork").key == "pork" and species.lookup("wild boar").key == "wild_hog"
+
+
+def test_species_endpoint_lists_groups_in_order():
+    assert client.get("/species").json()["groups"] == list(species.GROUPS)

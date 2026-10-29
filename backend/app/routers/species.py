@@ -16,6 +16,7 @@ def list_species() -> dict:
              "category": s.category, "group": s.group}
             for s in species_catalog.catalog()
         ],
+        "groups": list(species_catalog.GROUPS),
         "categories": [
             {"key": k, "label": label, "hint": hint}
             for k, (label, hint) in species_catalog.CATEGORIES.items()

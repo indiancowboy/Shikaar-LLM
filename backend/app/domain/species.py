@@ -40,6 +40,13 @@ CATEGORIES: dict[str, tuple[str, str]] = {
     "shellfish": ("Shellfish", "crab, shrimp, lobster, clams"),
 }
 
+# Display order for the species picker. Groups are for browsing only; the
+# category (shelf life, recipe matching) is set per species.
+GROUPS: tuple[str, ...] = (
+    "Big game", "Wild hog", "Bear", "Small game", "Waterfowl", "Upland",
+    "Fish (lean)", "Fish (oily)", "Shellfish", "Domestic",
+)
+
 _RAW: list[tuple[str, str, list[str], str, str]] = [
     # ------------------------------------------------------------ big game ---
     ("whitetail", "Whitetail deer", ["whitetail deer", "white tail", "white-tailed deer", "deer", "venison"], "biggame", "Big game"),
@@ -76,11 +83,10 @@ _RAW: list[tuple[str, str, list[str], str, str]] = [
     ("eland", "Eland", [], "biggame", "Big game"),
     ("blesbok", "Blesbok", [], "biggame", "Big game"),
     ("wildebeest", "Wildebeest", ["gnu"], "biggame", "Big game"),
-    # ---------------------------------------------------------- hog / pork ---
-    ("wild_hog", "Wild hog", ["hog", "hogs", "boar", "wild boar", "feral hog", "feral pig", "wild pig", "pig"], "hog", "Hog & pork"),
-    ("javelina", "Javelina", ["peccary", "collared peccary"], "hog", "Hog & pork"),
-    ("warthog", "Warthog", [], "hog", "Hog & pork"),
-    ("pork", "Pork (domestic)", ["domestic pork", "pork shoulder", "pork belly", "pork loin"], "hog", "Hog & pork"),
+    # ------------------------------------------------------------ wild hog ---
+    ("wild_hog", "Wild hog", ["hog", "hogs", "boar", "wild boar", "feral hog", "feral pig", "wild pig", "pig"], "hog", "Wild hog"),
+    ("javelina", "Javelina", ["peccary", "collared peccary"], "hog", "Wild hog"),
+    ("warthog", "Warthog", [], "hog", "Wild hog"),
     # ---------------------------------------------------------------- bear ---
     ("black_bear", "Black bear", ["bear"], "bear", "Bear"),
     ("brown_bear", "Brown bear / grizzly", ["grizzly", "grizzly bear", "kodiak bear"], "bear", "Bear"),
@@ -113,7 +119,6 @@ _RAW: list[tuple[str, str, list[str], str, str]] = [
     ("merganser", "Merganser", [], "waterfowl", "Waterfowl"),
     ("eider", "Eider", [], "waterfowl", "Waterfowl"),
     ("scoter", "Scoter", [], "waterfowl", "Waterfowl"),
-    ("pekin_duck", "Pekin duck (domestic)", ["pekin", "domestic duck", "muscovy"], "waterfowl", "Waterfowl"),
     ("goose", "Canada goose", ["canada goose", "honker", "honkers"], "waterfowl", "Waterfowl"),
     ("snow_goose", "Snow goose", ["blue goose", "ross's goose", "ross goose"], "waterfowl", "Waterfowl"),
     ("specklebelly", "Specklebelly goose", ["white-fronted goose", "specklebellies"], "waterfowl", "Waterfowl"),
@@ -142,11 +147,13 @@ _RAW: list[tuple[str, str, list[str], str, str]] = [
     ("cornish_hen", "Cornish hen", ["cornish game hen"], "poultry", "Domestic"),
     ("domestic_turkey", "Domestic turkey", ["store turkey", "farm turkey"], "poultry", "Domestic"),
     ("guinea_fowl", "Guinea fowl", ["guinea hen"], "poultry", "Domestic"),
+    ("pekin_duck", "Pekin duck", ["pekin", "domestic duck", "muscovy"], "waterfowl", "Domestic"),
     ("beef", "Beef", ["steer", "ground beef"], "redmeat", "Domestic"),
     ("veal", "Veal", [], "redmeat", "Domestic"),
     ("lamb", "Lamb", [], "redmeat", "Domestic"),
     ("mutton", "Mutton", [], "redmeat", "Domestic"),
     ("goat", "Goat", ["chevon", "cabrito", "goat meat"], "redmeat", "Domestic"),
+    ("pork", "Pork", ["domestic pork", "pork shoulder", "pork belly", "pork loin"], "hog", "Domestic"),
     # ----------------------------------------------------------- fish lean ---
     ("redfish", "Redfish", ["red fish", "red drum", "bull red"], "fishlean", "Fish (lean)"),
     ("black_drum", "Black drum", ["drum"], "fishlean", "Fish (lean)"),
