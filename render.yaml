@@ -19,5 +19,20 @@ services:
         sync: false
       - key: PINECONE_HOST
         sync: false
+      # Demo mode (per-browser freezers behind one shared password). Leave this
+      # set OR switch to accounts mode below — not both.
       - key: SHIKAAR_ACCESS_PASSWORD
+        sync: false
+      # Accounts mode: enable real per-user sign-in + durable storage.
+      # When these are set, unset SHIKAAR_ACCESS_PASSWORD.
+      #   SUPABASE_URL  = https://<project-ref>.supabase.co  (used to fetch the
+      #     project's JWKS and verify ES256 tokens — the default for new projects).
+      #   DATABASE_URL  = Supabase connection string (Session pooler).
+      #   SUPABASE_JWT_SECRET = ONLY for older projects that still sign tokens
+      #     with the legacy HS256 shared secret; new (ECC/ES256) projects omit it.
+      - key: SUPABASE_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
         sync: false

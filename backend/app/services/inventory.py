@@ -30,6 +30,12 @@ _ITEM_COLUMNS = (
 )
 
 
+def _use_pg() -> bool:
+    """Accounts-mode deploys set DATABASE_URL -> delegate to the Postgres store
+    (durable). Without it we stay on SQLite (local dev + the per-browser demo)."""
+    return bool(os.environ.get("DATABASE_URL"))
+
+
 def _db_path() -> str:
     return os.environ.get("SHIKAAR_DB", _DEFAULT_DB)
 
@@ -79,6 +85,9 @@ def _insert(con: sqlite3.Connection, item: FreezerItem, client_id: str) -> None:
 
 
 def create(data: FreezerItemCreate, client_id: str) -> FreezerItem:
+    if _use_pg():
+        from . import inventory_pg
+        return inventory_pg.create(data, client_id)
     item = FreezerItem(id=_new_id(), **data.model_dump())
     with _conn() as con:
         _insert(con, item, client_id)
@@ -90,6 +99,9 @@ def create_many(items: list[FreezerItemCreate], client_id: str) -> list[FreezerI
 
 
 def list_items(client_id: str) -> list[FreezerItem]:
+    if _use_pg():
+        from . import inventory_pg
+        return inventory_pg.list_items(client_id)
     with _conn() as con:
         rows = con.execute(
             "SELECT * FROM freezer_items WHERE client_id = ?", (client_id,)
@@ -98,6 +110,9 @@ def list_items(client_id: str) -> list[FreezerItem]:
 
 
 def get(item_id: str, client_id: str) -> Optional[FreezerItem]:
+    if _use_pg():
+        from . import inventory_pg
+        return inventory_pg.get(item_id, client_id)
     with _conn() as con:
         row = con.execute(
             "SELECT * FROM freezer_items WHERE id = ? AND client_id = ?",
@@ -109,6 +124,9 @@ def get(item_id: str, client_id: str) -> Optional[FreezerItem]:
 def update(item_id: str, patch: dict, client_id: str) -> Optional[FreezerItem]:
     """Merge `patch` (validated, unset-excluded) and re-validate. Scoped to the
     owner so one client can't edit another's items."""
+    if _use_pg():
+        from . import inventory_pg
+        return inventory_pg.update(item_id, patch, client_id)
     current = get(item_id, client_id)
     if current is None:
         return None
@@ -119,6 +137,9 @@ def update(item_id: str, patch: dict, client_id: str) -> Optional[FreezerItem]:
 
 
 def delete(item_id: str, client_id: str) -> bool:
+    if _use_pg():
+        from . import inventory_pg
+        return inventory_pg.delete(item_id, client_id)
     with _conn() as con:
         cur = con.execute(
             "DELETE FROM freezer_items WHERE id = ? AND client_id = ?",
@@ -129,6 +150,9 @@ def delete(item_id: str, client_id: str) -> bool:
 
 def clear(client_id: Optional[str] = None) -> None:
     """Test helper / reset. Clears one client's rows, or all if client_id is None."""
+    if _use_pg():
+        from . import inventory_pg
+        return inventory_pg.clear(client_id)
     with _conn() as con:
         if client_id is None:
             con.execute("DELETE FROM freezer_items")

@@ -57,6 +57,63 @@ Open the Vercel URL → you'll get a **password prompt** → enter
 This is a speed bump for a small demo, not real auth. For real users, add proper
 accounts/sessions (and rate limiting) later.
 
+## Accounts mode (real sign-in + durable freezers)
+
+The demo above is per-browser (freezers vanish when the browser is cleared) and
+SQLite-backed (freezers reset on every Render redeploy). To make freezers belong
+to real **users** and persist across devices and deploys, switch to accounts
+mode. It's all env-gated — set the vars and redeploy; set nothing and the demo
+behaves exactly as before.
+
+Provider: **Supabase** gives both the sign-in (JWT) and the Postgres database on
+one free project.
+
+### 1. Create the Supabase project
+
+1. New project at https://supabase.com. Pick a region near your users.
+2. **Project Settings → API**: copy the **Project URL** and the publishable /
+   anon key (`sb_publishable_...` on new projects). No JWT secret is needed — new
+   projects sign tokens with asymmetric ES256 keys and the backend verifies them
+   via the project's public JWKS endpoint (derived from the Project URL).
+   *(Only older projects that still use a legacy HS256 "JWT Secret" set
+   `SUPABASE_JWT_SECRET` instead — see the note below.)*
+3. **Project Settings → Database → Connection string**: copy the **Session
+   pooler** URI (`postgresql://postgres.<ref>:<password>@...pooler.supabase.com:5432/postgres`).
+   The backend creates its `freezer_items` table automatically on first request.
+4. **Authentication → Providers**: email is on by default (magic link). To offer
+   Google, enable the Google provider and add your OAuth client id/secret.
+5. **Authentication → URL Configuration**: add your Vercel URL to **Redirect
+   URLs** so magic-link / Google sign-in returns to the app.
+
+### 2. Backend (Render) env
+
+Set these on the `shikaar-api` service and **remove** `SHIKAAR_ACCESS_PASSWORD`
+(the token is the gate now):
+
+- `SUPABASE_URL` — your Project URL, e.g. `https://<project-ref>.supabase.co`
+  (the backend fetches the JWKS from here to verify ES256 tokens)
+- `DATABASE_URL` — the Session pooler URI from step 3
+
+With `SUPABASE_URL` set, every `/ask`, `/freezer/*`, `/fish/*` request must carry
+a valid Supabase token (401 otherwise), and inventory is stored in Postgres keyed
+by the user id — so it's durable and private per user.
+
+> **Legacy projects only:** if your project still signs tokens with the old HS256
+> **JWT Secret** (Project Settings → API → JWT Settings), set
+> `SUPABASE_JWT_SECRET` to that secret instead of (or in addition to)
+> `SUPABASE_URL`. The backend verifies whichever algorithm the token declares.
+
+### 3. Frontend (Vercel) env
+
+- `NEXT_PUBLIC_SUPABASE_URL` — the Project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — the anon public key
+
+Redeploy. The app now shows a Google / magic-link sign-in instead of the shared
+password, and a user's freezer follows them across phone and laptop.
+
+> Rollback is trivial: unset the three `SUPABASE_*`/`DATABASE_URL` vars (and
+> restore `SHIKAAR_ACCESS_PASSWORD`) to drop back to the demo.
+
 ## Local dev (unchanged)
 
 ```bash

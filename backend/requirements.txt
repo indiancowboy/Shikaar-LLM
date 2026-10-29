@@ -14,6 +14,13 @@ pyyaml==6.0.2
 # Environment & Configuration
 python-dotenv==1.0.1
 
+# Auth (verify Supabase JWTs in accounts mode).
+# [crypto] pulls `cryptography` for ES256/RS256 (new Supabase asymmetric keys).
+PyJWT[crypto]==2.9.0
+
+# Durable inventory store in accounts mode (Supabase / any Postgres)
+psycopg[binary]==3.2.3
+
 # Text Processing
 markdown==3.7
 tiktoken==0.8.0

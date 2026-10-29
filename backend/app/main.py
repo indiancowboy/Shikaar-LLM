@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
+from .auth import get_owner_id
 from .rag import generation, retrieval
 from .routers import fish, freezer
 from .security import require_access
@@ -27,9 +28,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Expensive routes sit behind the shared-password gate (no-op when unset locally).
-app.include_router(freezer.router, dependencies=[Depends(require_access)])
-app.include_router(fish.router, dependencies=[Depends(require_access)])
+# Expensive routes are protected: the shared-password gate in demo mode, and a
+# valid user token in accounts mode (get_owner_id enforces the JWT when
+# SUPABASE_JWT_SECRET is set; it's a no-op pass-through otherwise).
+app.include_router(
+    freezer.router, dependencies=[Depends(require_access), Depends(get_owner_id)]
+)
+app.include_router(
+    fish.router, dependencies=[Depends(require_access), Depends(get_owner_id)]
+)
 
 
 @app.get("/", include_in_schema=False)
@@ -67,7 +74,11 @@ class AskResponse(BaseModel):
     sources: list[Source]
 
 
-@app.post("/ask", response_model=AskResponse, dependencies=[Depends(require_access)])
+@app.post(
+    "/ask",
+    response_model=AskResponse,
+    dependencies=[Depends(require_access), Depends(get_owner_id)],
+)
 def ask(req: AskRequest) -> AskResponse:
     """General RAG Q&A over the recipe/cuisine knowledge base."""
     matches = retrieval.retrieve(req.query, req.top_k, content_type=req.content_type)

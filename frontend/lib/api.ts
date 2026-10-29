@@ -2,6 +2,7 @@
 // for inventory (so cook-first / meal-plan, which read the server store, stay
 // consistent). Swapping to an authenticated DB later is a backend-only change.
 
+import { getAccessToken } from "./supabaseClient";
 import type {
   CandidatesResponse,
   CookFirstResponse,
@@ -26,11 +27,17 @@ const RETRY_DELAY_MS = 3000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// Shared-password header (typed by the user, stored locally — never in the bundle).
+// Auth headers. Accounts mode: a Supabase JWT as a Bearer token. Demo mode: the
+// shared password (typed by the user, stored locally — never in the bundle).
+// Both can be present harmlessly; the backend uses whichever mode it's in.
 function authHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
+  const headers: Record<string, string> = {};
+  const token = getAccessToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const k = window.localStorage.getItem(ACCESS_KEY_STORAGE);
-  return k ? { "X-Access-Password": k } : {};
+  if (k) headers["X-Access-Password"] = k;
+  return headers;
 }
 
 // Per-browser id so each tester gets a private freezer (generated once, stored locally).
