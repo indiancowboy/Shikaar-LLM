@@ -23,11 +23,16 @@ services:
       # set OR switch to accounts mode below — not both.
       - key: SHIKAAR_ACCESS_PASSWORD
         sync: false
-      # Accounts mode: set these two to enable real per-user sign-in + durable
-      # storage. SUPABASE_JWT_SECRET = Supabase Project Settings > API > JWT
-      # Settings. DATABASE_URL = Supabase connection string (Session pooler).
+      # Accounts mode: enable real per-user sign-in + durable storage.
       # When these are set, unset SHIKAAR_ACCESS_PASSWORD.
-      - key: SUPABASE_JWT_SECRET
+      #   SUPABASE_URL  = https://<project-ref>.supabase.co  (used to fetch the
+      #     project's JWKS and verify ES256 tokens — the default for new projects).
+      #   DATABASE_URL  = Supabase connection string (Session pooler).
+      #   SUPABASE_JWT_SECRET = ONLY for older projects that still sign tokens
+      #     with the legacy HS256 shared secret; new (ECC/ES256) projects omit it.
+      - key: SUPABASE_URL
         sync: false
       - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
         sync: false

@@ -71,8 +71,12 @@ one free project.
 ### 1. Create the Supabase project
 
 1. New project at https://supabase.com. Pick a region near your users.
-2. **Project Settings → API**: copy the **Project URL**, the **anon public** key,
-   and (under **JWT Settings**) the **JWT Secret**.
+2. **Project Settings → API**: copy the **Project URL** and the publishable /
+   anon key (`sb_publishable_...` on new projects). No JWT secret is needed — new
+   projects sign tokens with asymmetric ES256 keys and the backend verifies them
+   via the project's public JWKS endpoint (derived from the Project URL).
+   *(Only older projects that still use a legacy HS256 "JWT Secret" set
+   `SUPABASE_JWT_SECRET` instead — see the note below.)*
 3. **Project Settings → Database → Connection string**: copy the **Session
    pooler** URI (`postgresql://postgres.<ref>:<password>@...pooler.supabase.com:5432/postgres`).
    The backend creates its `freezer_items` table automatically on first request.
@@ -84,14 +88,20 @@ one free project.
 ### 2. Backend (Render) env
 
 Set these on the `shikaar-api` service and **remove** `SHIKAAR_ACCESS_PASSWORD`
-(the JWT is the gate now):
+(the token is the gate now):
 
-- `SUPABASE_JWT_SECRET` — the JWT Secret from step 2
+- `SUPABASE_URL` — your Project URL, e.g. `https://<project-ref>.supabase.co`
+  (the backend fetches the JWKS from here to verify ES256 tokens)
 - `DATABASE_URL` — the Session pooler URI from step 3
 
-With `SUPABASE_JWT_SECRET` set, every `/ask`, `/freezer/*`, `/fish/*` request
-must carry a valid Supabase token (401 otherwise), and inventory is stored in
-Postgres keyed by the user id — so it's durable and private per user.
+With `SUPABASE_URL` set, every `/ask`, `/freezer/*`, `/fish/*` request must carry
+a valid Supabase token (401 otherwise), and inventory is stored in Postgres keyed
+by the user id — so it's durable and private per user.
+
+> **Legacy projects only:** if your project still signs tokens with the old HS256
+> **JWT Secret** (Project Settings → API → JWT Settings), set
+> `SUPABASE_JWT_SECRET` to that secret instead of (or in addition to)
+> `SUPABASE_URL`. The backend verifies whichever algorithm the token declares.
 
 ### 3. Frontend (Vercel) env
 

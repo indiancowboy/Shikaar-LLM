@@ -81,3 +81,68 @@ def test_same_user_different_token_same_freezer():
     client.post("/freezer", json=_item(), headers=_bearer("user-alice"))
     # A fresh token for the same subject (e.g. signing in on another device).
     assert len(client.get("/freezer", headers=_bearer("user-alice")).json()) == 1
+
+
+# --------------------------------------------------------------- ES256 path ---
+# New Supabase projects sign tokens with asymmetric ES256 keys verified via JWKS.
+# We generate a real EC keypair, mint ES256 tokens, and stub the JWKS lookup so
+# the verification runs offline (no network to Supabase).
+
+from app import auth  # noqa: E402
+
+
+@pytest.fixture()
+def es256(monkeypatch):
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    # Accounts mode via SUPABASE_URL only (no shared secret) — Nikhil's real setup.
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.delenv("SUPABASE_JWT_SECRET", raising=False)
+
+    priv = ec.generate_private_key(ec.SECP256R1())
+    monkeypatch.setattr(auth, "_signing_key", lambda _token: priv.public_key())
+    inventory.clear()
+    yield priv
+    inventory.clear()
+
+
+def _es_token(priv, sub: str, **over) -> str:
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(tz=timezone.utc)
+    claims = {
+        "sub": sub, "aud": "authenticated", "iat": now,
+        "exp": now + timedelta(hours=1),
+    }
+    claims.update(over)
+    return jwt.encode(claims, priv, algorithm="ES256", headers={"kid": "key-1"})
+
+
+def _es_bearer(priv, sub: str, **over) -> dict:
+    return {"Authorization": f"Bearer {_es_token(priv, sub, **over)}"}
+
+
+def test_es256_requires_token(es256):
+    assert client.get("/freezer").status_code == 401
+
+
+def test_es256_valid_token_and_scoping(es256):
+    priv = es256
+    client.post("/freezer", json=_item(), headers=_es_bearer(priv, "alice"))
+    assert len(client.get("/freezer", headers=_es_bearer(priv, "alice")).json()) == 1
+    assert client.get("/freezer", headers=_es_bearer(priv, "bob")).json() == []
+
+
+def test_es256_rejects_expired(es256):
+    from datetime import datetime, timedelta, timezone
+
+    past = datetime.now(tz=timezone.utc) - timedelta(hours=1)
+    assert client.get(
+        "/freezer", headers=_es_bearer(es256, "alice", exp=past)
+    ).status_code == 401
+
+
+def test_es256_rejects_wrong_audience(es256):
+    assert client.get(
+        "/freezer", headers=_es_bearer(es256, "alice", aud="wrong")
+    ).status_code == 401
