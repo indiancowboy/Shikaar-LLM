@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { shrinkImage } from "@/lib/image";
 import CandidateEditor from "@/components/CandidateEditor";
 import SpeciesPicker from "@/components/SpeciesPicker";
 import { amountLabel, CAT_LABEL, pretty, resolveSpecies, speciesKey, todayISO } from "@/lib/format";
@@ -58,9 +59,9 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
   const parseImage = (file: File) =>
     run(async () => {
       // Whatever's typed in the box rides along as a note ("wild hog").
-      const res = await api.parseImage(file, text.trim() || undefined);
+      const res = await api.parseImage(await shrinkImage(file), text.trim() || undefined);
       if (!res.candidates.length) {
-        setErr("Couldn't read that photo — try a clearer shot or use the manual form.");
+        setErr("Couldn't find any packs in that photo. Try a closer shot, or type a quick note like 'elk: 4 steaks, 2 roasts' and tap Parse it.");
         return;
       }
       showCandidates(res.candidates);
