@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   GROUP_LABEL,
   GROUP_ORDER,
@@ -125,6 +126,51 @@ function Item({
             Remove
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** "Clear freezer" with an inline are-you-sure step before anything is deleted. */
+export function ClearFreezer({ count, onClear }: { count: number; onClear: () => Promise<void> }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  if (!confirming) {
+    return (
+      <div className="clear-row">
+        <button className="clear-btn" onClick={() => setConfirming(true)}>
+          Clear freezer
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="clear-confirm">
+      <div>
+        Delete all {count} {count === 1 ? "item" : "items"} from your freezer? This can&apos;t be undone.
+      </div>
+      <div className="clear-actions">
+        <button className="btn-ghost" onClick={() => setConfirming(false)} disabled={busy}>
+          Cancel
+        </button>
+        <button
+          className="clear-yes"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await onClear();
+            } finally {
+              setBusy(false);
+              setConfirming(false);
+            }
+          }}
+        >
+          {busy ? <span className="spinner" /> : null}
+          Delete all
+        </button>
       </div>
     </div>
   );

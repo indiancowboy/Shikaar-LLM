@@ -34,6 +34,14 @@ def list_freezer(owner_id: str = Depends(get_owner_id)) -> list[FreezerItemRead]
     return [it.with_status() for it in inventory.list_items(owner_id)]
 
 
+@router.delete("")
+def clear_freezer(owner_id: str = Depends(get_owner_id)) -> dict:
+    """Empty the caller's freezer. Only their own items; returns how many went."""
+    removed = len(inventory.list_items(owner_id))
+    inventory.clear(owner_id)
+    return {"removed": removed}
+
+
 @router.post("", response_model=FreezerItemRead, status_code=201)
 def add_freezer(item: FreezerItemCreate, owner_id: str = Depends(get_owner_id)) -> FreezerItemRead:
     return inventory.create(item, owner_id).with_status()
