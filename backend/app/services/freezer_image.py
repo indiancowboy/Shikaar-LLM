@@ -14,6 +14,7 @@ See `_ocr_fallback` below for the seam.
 from __future__ import annotations
 
 import base64
+import logging
 from typing import Optional
 
 from ..config import GENERATION_MODEL, get_openai
@@ -23,6 +24,23 @@ from .freezer_parse import (
     EXTRACTION_SYSTEM,
     coerce_all,
 )
+
+log = logging.getLogger(__name__)
+
+# Most real photos are a pile of vac-sealed packs with blank labels, not a cut
+# sheet, so the model must describe what it sees when there's nothing to read.
+PHOTO_INSTRUCTIONS = """
+This photo shows freezer meat or fish. It may be a processor cut sheet, labeled
+packages, or packages with no writing on them. Handle all of them:
+- Writing visible (cut sheet, printed or handwritten labels): read every item.
+- Packages with no readable writing: list what you can SEE. Name each cut from
+  how it looks (steaks, roast, backstrap, tenderloin, ground, chops, ribs, stew
+  meat, fillets, whole bird...). Group look-alike packages into one entry with
+  unit "pkgs" and qty = how many packages. Never invent weights.
+- Only name the animal if a label or the hunter's note says it; otherwise use
+  "species": "unknown".
+Return an entry for every package you can see.
+"""
 
 
 def _vision_extract(image_bytes: bytes, mime: str, hint: Optional[str] = None) -> list[dict]:
@@ -41,7 +59,7 @@ def _vision_extract(image_bytes: bytes, mime: str, hint: Optional[str] = None) -
                 "role": "user",
                 "content": [
                     {"type": "text", "text": EXTRACTION_INSTRUCTIONS
-                        + "\n\nRead every item from this processor cut sheet / package labels."
+                        + "\n" + PHOTO_INSTRUCTIONS
                         + (f'\nNote from the hunter about this photo: "{hint}"' if hint else "")},
                     {"type": "image_url",
                      "image_url": {"url": f"data:{mime};base64,{b64}"}},
@@ -69,11 +87,13 @@ def parse_image(
 ) -> list[ParseCandidate]:
     """Vision extract -> (OCR seam) -> []. Never raises on model trouble."""
     raw: Optional[list[dict]] = None
-    for _ in range(attempts):
+    for attempt in range(1, attempts + 1):
         try:
             raw = _vision_extract(image_bytes, mime, hint)
             break
-        except Exception:
+        except Exception as e:  # logged so Render's logs say why a photo failed
+            log.warning("photo parse attempt %d/%d failed (%d bytes, %s): %r",
+                        attempt, attempts, len(image_bytes), mime, e)
             raw = None
 
     offline = False
