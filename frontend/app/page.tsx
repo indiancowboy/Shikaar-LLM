@@ -5,7 +5,7 @@ import AddToFreezer from "@/components/AddToFreezer";
 import AskShikaar from "@/components/AskShikaar";
 import { ShikaarLogo, TbghCredit } from "@/components/Brand";
 import Gate from "@/components/Gate";
-import { CookFirst, InventoryList, StatStrip } from "@/components/Inventory";
+import { ClearFreezer, CookFirst, InventoryList, StatStrip } from "@/components/Inventory";
 import { api } from "@/lib/api";
 import type { CookFirstResponse, FreezerItemRead } from "@/lib/types";
 
@@ -48,6 +48,11 @@ function FreezerHub() {
     refresh();
   };
 
+  const clearAll = async () => {
+    await api.clear();
+    refresh();
+  };
+
   const use = async (id: string) => {
     await api.use(id);
     refresh();
@@ -72,6 +77,7 @@ function FreezerHub() {
 
       <div className="eyebrow">In the freezer</div>
       <InventoryList items={items} onRemove={remove} onUse={use} />
+      {items.length ? <ClearFreezer count={items.length} onClear={clearAll} /> : null}
 
       <AskShikaar items={items} />
 

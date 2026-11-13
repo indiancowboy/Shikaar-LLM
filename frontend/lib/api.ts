@@ -125,6 +125,9 @@ export const api = {
 
   species: () => rawFetch("/species").then(asJson<SpeciesResponse>),
 
+  // Empty the signed-in user's freezer (only their own items).
+  clear: () => rawFetch("/freezer", { method: "DELETE" }).then(asJson<{ removed: number }>),
+
   // Pull packs out of the freezer; the batch is removed when it hits zero.
   use: (id: string, count = 1) =>
     rawFetch(`/freezer/${id}/use`, {
