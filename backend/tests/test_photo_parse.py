@@ -37,3 +37,50 @@ def test_failures_are_logged_and_return_empty(monkeypatch, caplog):
         assert freezer_image.parse_image(b"x" * 10, "image/jpeg") == []
     msgs = [r.getMessage() for r in caplog.records]
     assert len(msgs) == 3 and all("openai said no" in m and "10 bytes" in m for m in msgs)
+
+
+# ------------------------------------------------- package-by-package reads ---
+import json as _json
+from types import SimpleNamespace
+
+
+def _fake_openai(monkeypatch, reply: dict):
+    sent = {}
+
+    def create(**kw):
+        sent.update(kw)
+        msg = SimpleNamespace(content=_json.dumps(reply))
+        return SimpleNamespace(choices=[SimpleNamespace(message=msg)])
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    monkeypatch.setattr(freezer_image, "get_openai", lambda: client)
+    return sent
+
+
+def test_prompt_has_cut_guide_and_asks_package_by_package():
+    t = freezer_image.PHOTO_INSTRUCTIONS
+    for word in ("backstrap", "tenderloin", "roast", "steaks", "ground", "PACKAGE BY PACKAGE", '"packages"'):
+        assert word in t
+    assert 'Never answer "unknown"' in t
+
+
+def test_request_uses_high_detail(monkeypatch):
+    sent = _fake_openai(monkeypatch, {"entries": [{"species": "unknown", "cut": "roast", "qty": 2, "unit": "pkgs"}]})
+    freezer_image.parse_image(b"jpeg", "image/jpeg")
+    image_part = sent["messages"][1]["content"][1]
+    assert image_part["image_url"]["detail"] == "high"
+
+
+def test_packages_only_reply_is_grouped_by_cut(monkeypatch):
+    _fake_openai(monkeypatch, {"packages": [
+        {"n": 1, "looks_like": "long round log", "cut": "backstrap"},
+        {"n": 2, "looks_like": "big chunk", "cut": "roast"},
+        {"n": 3, "looks_like": "big chunk", "cut": "roast"},
+        {"n": 4, "looks_like": "flat slices", "cut": "steaks"},
+        {"n": 5, "looks_like": "flat slices", "cut": "Steaks"},
+        {"n": 6, "looks_like": "flat slices", "cut": "steaks"},
+    ]})
+    cands = freezer_image.parse_image(b"jpeg", "image/jpeg", hint="mule deer")
+    got = {(c.cut, c.qty, c.unit, c.species) for c in cands}
+    assert got == {("backstrap", 1, "pkgs", "mule_deer"), ("roast", 2, "pkgs", "mule_deer"),
+                   ("steaks", 3, "pkgs", "mule_deer")}

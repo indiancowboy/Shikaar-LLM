@@ -10,6 +10,9 @@ import type { Category, ParseCandidate, SpeciesResponse, Storage, Unit } from "@
 
 type Mode = "text" | "animal";
 
+// The photo reader couldn't name the cut; nudge the user to set it before adding.
+const isUnknownCut = (cut: string) => ["unknown", "unknown cut", "mixed"].includes(cut.trim().toLowerCase());
+
 export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
   const [mode, setMode] = useState<Mode>("text");
   const [text, setText] = useState("");
@@ -266,16 +269,17 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
                   }}
                 />
               ) : (
-                <div className={`chip ${c.species_unknown ? "unknown" : ""}`} key={i}>
+                <div className={`chip ${c.species_unknown || isUnknownCut(c.cut) ? "unknown" : ""}`} key={i}>
                   <button className="chip-body" type="button" onClick={() => setEditing(i)} title="Edit">
                     <div className="ctxt">
-                      {c.species_unknown ? "Unknown animal" : pretty(c.species)} / {pretty(c.cut)}
+                      {c.species_unknown ? "Unknown animal" : pretty(c.species)} /{" "}
+                      {isUnknownCut(c.cut) ? "Cut unknown" : pretty(c.cut)}
                     </div>
                     <div className="cmeta">
                       {amountLabel(c)}
                       {c.packs ? ` (${c.qty} ${c.unit})` : ""} ·{" "}
                       {c.storage === "vacuum_sealed" ? "vac-sealed" : "wrapped"}
-                      {c.species_unknown ? "" : ` · ${CAT_LABEL[c.category]}`} · <span className="chip-edit">tap to edit</span>
+                      {c.species_unknown ? "" : ` · ${CAT_LABEL[c.category]}`} · <span className="chip-edit">{isUnknownCut(c.cut) ? "tap to set the cut" : "tap to edit"}</span>
                     </div>
                   </button>
                   <button className="x" onClick={() => dropCandidate(i)} title="Remove">
