@@ -106,6 +106,11 @@ export interface Meal {
   steps: string[];
 }
 
+export interface AskResponse {
+  answer: string;
+  sources: { id: string; title: string; score: number }[];
+}
+
 export interface MealPlanResponse {
   plan: string;
   meals: Meal[];

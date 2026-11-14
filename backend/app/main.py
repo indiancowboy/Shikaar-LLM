@@ -6,9 +6,10 @@ endpoints (brief §10) are added in Phase 1 on top of this same RAG layer.
 """
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
@@ -18,6 +19,8 @@ from .rag import generation, retrieval
 from .routers import fish, freezer, species
 from .security import require_access
 from .services.usage import require_ai_quota
+
+log = logging.getLogger(__name__)
 
 app = FastAPI(title="Shikaar API", version="0.1.0")
 
@@ -84,17 +87,29 @@ class AskResponse(BaseModel):
     dependencies=[Depends(require_access), Depends(get_owner_id), Depends(require_ai_quota)],
 )
 def ask(req: AskRequest) -> AskResponse:
-    """General RAG Q&A over the recipe/cuisine knowledge base."""
-    matches = retrieval.retrieve(req.query, req.top_k, content_type=req.content_type)
-    context = retrieval.format_context(matches)
+    """General RAG Q&A over the recipe/cuisine knowledge base. Still answers
+    (from general wild-game knowledge) if the vector index is unreachable."""
+    try:
+        matches = retrieval.retrieve(req.query, req.top_k, content_type=req.content_type)
+    except Exception as e:
+        log.warning("ask: retrieval failed, answering without the library: %r", e)
+        matches = []
+    context = retrieval.format_context(matches) or "(no library entries available)"
     prompt = (
         "Answer the user's question using the retrieved knowledge base entries "
         "below. Stay grounded in them; if they don't cover it, say so and give "
-        "your best wild-game cooking guidance.\n\n"
+        "your best wild-game cooking guidance. Keep it practical: temps, times, "
+        "and the one or two things that matter most.\n\n"
         f"# Retrieved knowledge base\n{context}\n\n"
         f"# Question\n{req.query}"
     )
-    answer = generation.generate(prompt)
+    try:
+        answer = generation.generate(prompt)
+    except Exception as e:
+        log.warning("ask: generation failed: %r", e)
+        # 500, not 502/503: the app retries those (cold starts), which would
+        # repeat the AI call and spend the user's daily AI actions.
+        raise HTTPException(status_code=500, detail="Shikaar couldn't answer right now. Try again in a minute.")
     sources = [
         Source(
             id=m["id"],

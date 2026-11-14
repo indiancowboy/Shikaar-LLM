@@ -264,3 +264,12 @@ input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; m
 .updating { font-family: var(--f-mono); font-size: 9px; letter-spacing: .12em; color: var(--steel); text-transform: lowercase; margin-left: 10px; }
 .feedback { text-align: center; margin-top: 18px; }
 .feedback a { font-family: var(--f-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ember); text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 2px; }
+
+/* ask anything */
+.ask-any { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+.ask-any-h { font-family: var(--f-head); font-weight: 600; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 8px; }
+.ask-any-row { display: flex; gap: 8px; }
+.ask-any-row input { flex: 1; min-width: 0; }
+.answer-card { margin-top: 12px; background: var(--ink); border: 1px solid var(--line); border-left: 3px solid var(--seafoam); border-radius: 3px; padding: 4px 14px 12px; }
+.answer-card .recipe-text { border-top: none; margin-top: 0; }
+.ask-src { font-family: var(--f-mono); font-size: 10px; color: var(--muted); letter-spacing: .04em; margin-top: 8px; }

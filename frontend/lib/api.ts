@@ -4,6 +4,7 @@
 
 import { getAccessToken } from "./supabaseClient";
 import type {
+  AskResponse,
   CandidatesResponse,
   CookFirstResponse,
   FreezerItemCreate,
@@ -86,8 +87,8 @@ async function asJson<T>(res: Response): Promise<T> {
     } catch {
       /* non-JSON error body */
     }
-    // The daily AI limit message is written for people; show it as-is.
-    throw new Error(res.status === 429 ? detail : `${res.status}: ${detail}`);
+    // These messages are written for people; show them as-is.
+    throw new Error(res.status === 429 || res.status === 500 ? detail : `${res.status}: ${detail}`);
   }
   return res.json() as Promise<T>;
 }
@@ -169,6 +170,14 @@ export const api = {
     }).then(asJson<YieldResponse>),
 
   cookFirst: () => rawFetch("/freezer/cook-first").then(asJson<CookFirstResponse>),
+
+  // Free-form cooking question, answered from the recipe/technique library.
+  ask: (query: string) =>
+    rawFetch("/ask", {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify({ query }),
+    }).then(asJson<AskResponse>),
 
   mealPlan: (query?: string) =>
     rawFetch("/freezer/meal-plan", {
