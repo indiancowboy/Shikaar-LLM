@@ -1,15 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import CandidateEditor, { type EditableEntry } from "@/components/CandidateEditor";
 import { useSpeciesCatalog } from "@/lib/useSpeciesCatalog";
 import {
   GROUP_LABEL,
   GROUP_ORDER,
   pretty,
+  resolveSpecies,
   STATUS_FILL,
 } from "@/lib/format";
-import type { CookFirstResponse, FreezerItemCreate, FreezerItemRead } from "@/lib/types";
+import type { CookFirstResponse, FreezerItemCreate, FreezerItemRead, SpeciesResponse } from "@/lib/types";
+
+const OTHER = "Other";
+
+/** Catalog entry for a saved species (its key, or a name/alias like "mallard"). */
+function entryOf(catalog: SpeciesResponse | null, species: string) {
+  if (!catalog) return null;
+  return catalog.species.find((s) => s.key === species) ?? resolveSpecies(catalog.species, species.replace(/_/g, " "));
+}
+
+/** Species → catalog group ("Big game", "Waterfowl"…); "Other" if unlisted. */
+function groupOf(catalog: SpeciesResponse | null, species: string): string {
+  return entryOf(catalog, species)?.group ?? OTHER;
+}
+
+/** Everything the search box looks at, lowercased. */
+function haystack(catalog: SpeciesResponse | null, i: FreezerItemRead): string {
+  const label = entryOf(catalog, i.species)?.label ?? "";
+  return [pretty(i.species), label, i.species, i.cut, i.harvest_location ?? "", i.notes ?? ""]
+    .join(" ")
+    .toLowerCase();
+}
 
 export type EditItem = (id: string, patch: Partial<FreezerItemCreate>) => Promise<void>;
 
@@ -84,6 +106,7 @@ function Item({
       unit: item.unit, storage: item.storage, packs: item.packs ?? null,
       pack_size: item.pack_size ?? null, parsed_offline: false, species_unknown: false,
       date_frozen: item.date_frozen,
+      harvest_location: item.harvest_location ?? null, notes: item.notes ?? null,
     };
     return (
       <div className="item-edit">
@@ -98,6 +121,7 @@ function Item({
               species: c.species, category: c.category, cut: c.cut, qty: c.qty, unit: c.unit,
               storage: c.storage, packs: c.packs ?? null, pack_size: c.pack_size ?? null,
               date_frozen: c.date_frozen,
+              harvest_location: c.harvest_location ?? null, notes: c.notes ?? null,
             });
             setEditing(false);
           }}
@@ -127,6 +151,12 @@ function Item({
             {item.storage === "vacuum_sealed" ? "Vac-sealed" : "Wrapped"} · {item.shelf_life_months}mo life
           </span>
         </div>
+        {item.harvest_location || item.notes ? (
+          <div className="item-notes">
+            {item.harvest_location ? <span className="loc">📍 {item.harvest_location}</span> : null}
+            {item.notes ? <span className="note">{item.notes}</span> : null}
+          </div>
+        ) : null}
         <div className="gauge">
           <div className="fill" style={{ width: `${pctW}%`, background: fill }} />
           <div className="notch" style={{ left: `${Math.min(item.pct * 100, 99)}%` }} />
@@ -236,7 +266,41 @@ export function InventoryList({
     );
   }
 
-  const sorted = [...items].sort((a, b) => b.pct - a.pct);
+  return <FilteredList items={items} onRemove={onRemove} onUse={onUse} onEdit={onEdit} />;
+}
+
+function FilteredList({
+  items,
+  onRemove,
+  onUse,
+  onEdit,
+}: {
+  items: FreezerItemRead[];
+  onRemove: (id: string) => void;
+  onUse: (id: string) => void;
+  onEdit: EditItem;
+}) {
+  const catalog = useSpeciesCatalog();
+  const [q, setQ] = useState("");
+  const [group, setGroup] = useState("");
+
+  // Only offer groups that are actually in the freezer, in catalog order.
+  const groupsPresent = useMemo(() => {
+    const present = new Set(items.map((i) => groupOf(catalog, i.species)));
+    const order = [...(catalog?.groups ?? []), OTHER];
+    return order.filter((g) => present.has(g));
+  }, [items, catalog]);
+
+  const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = items.filter((i) => {
+    if (group && groupOf(catalog, i.species) !== group) return false;
+    if (!words.length) return true;
+    const h = haystack(catalog, i);
+    return words.every((w) => h.includes(w));
+  });
+  const filtering = !!(words.length || group);
+
+  const sorted = [...shown].sort((a, b) => b.pct - a.pct);
   const groups = GROUP_ORDER.map((status) => ({
     status,
     items: sorted.filter((i) => i.status === status),
@@ -244,6 +308,36 @@ export function InventoryList({
 
   return (
     <>
+      {items.length > 3 ? (
+        <div className="inv-filter">
+          <input
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search species, cut, notes…"
+            aria-label="Search the freezer"
+          />
+          {groupsPresent.length > 1 ? (
+            <select value={group} onChange={(e) => setGroup(e.target.value)} aria-label="Filter by group">
+              <option value="">All</option>
+              {groupsPresent.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+          ) : null}
+        </div>
+      ) : null}
+      {filtering ? (
+        <div className="inv-count">
+          Showing {shown.length} of {items.length}
+          <button className="clear-btn" onClick={() => { setQ(""); setGroup(""); }}>
+            Clear
+          </button>
+        </div>
+      ) : null}
+      {filtering && !shown.length ? <div className="empty">Nothing in the freezer matches that.</div> : null}
       {groups.map((g) => (
         <div key={g.status}>
           <div className="group-head">{GROUP_LABEL[g.status]}</div>

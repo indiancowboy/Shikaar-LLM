@@ -7,7 +7,11 @@ import type { Category, ParseCandidate, SpeciesResponse, Storage, Unit } from "@
 
 const CATEGORY_KEYS = Object.keys(CAT_LABEL) as Category[];
 
-export type EditableEntry = ParseCandidate & { date_frozen?: string };
+export type EditableEntry = ParseCandidate & {
+  date_frozen?: string;
+  harvest_location?: string | null;
+  notes?: string | null;
+};
 
 /** Inline editor for one entry: a parsed entry before it's added, or (with
  *  `withDate`) an item already in the freezer. Same fields and pack math as
@@ -37,6 +41,8 @@ export default function CandidateEditor({
   const [unit, setUnit] = useState<Unit>(c.unit);
   const [storage, setStorage] = useState<Storage>(c.storage);
   const [date, setDate] = useState(c.date_frozen ?? todayISO());
+  const [location, setLocation] = useState(c.harvest_location ?? "");
+  const [notes, setNotes] = useState(c.notes ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -65,7 +71,9 @@ export default function CandidateEditor({
       packs: packCount,
       pack_size: packCount ? n : null,
       species_unknown: false,
-      ...(withDate ? { date_frozen: date } : {}),
+      ...(withDate
+        ? { date_frozen: date, harvest_location: location.trim() || null, notes: notes.trim() || null }
+        : {}),
       });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Couldn't save that.");
@@ -134,6 +142,18 @@ export default function CandidateEditor({
             <option value="wrapped">Wrapped</option>
           </select>
         </div>
+        {withDate ? (
+          <>
+            <div className="field field-wide">
+              <label>Harvest location (optional)</label>
+              <input value={location} maxLength={120} placeholder="Unit 61, Colorado…" onChange={(e) => setLocation(e.target.value)} />
+            </div>
+            <div className="field field-wide">
+              <label>Notes (optional)</label>
+              <textarea value={notes} rows={2} maxLength={500} placeholder="Opening-day buck, Dad's tag…" onChange={(e) => setNotes(e.target.value)} />
+            </div>
+          </>
+        ) : null}
       </div>
       {err ? <div className="banner-err">{err}</div> : null}
       <div className="cand-actions">

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Oswald, Inter, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const oswald = Oswald({
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body>
         <div className="topedge" />
         {children}
+        <Analytics />
       </body>
     </html>
   );

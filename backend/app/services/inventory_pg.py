@@ -5,13 +5,18 @@ Mirrors the function signatures of ``inventory`` (the SQLite store) exactly, so
 ``owner_id`` — the Supabase user id in accounts mode — so a freezer persists
 across redeploys and follows the user across devices.
 
-Connection per call (psycopg handles pooling at the driver level well enough for
-this scale) keeps it thread-safe under FastAPI. The table is created on demand.
+Connections come from a small pool, so a request reuses an open connection
+instead of paying a fresh TLS handshake to the database each time (the main
+cost when the database is in another region). The schema is ensured once per
+process, not on every request.
 """
 from __future__ import annotations
 
+import atexit
 import os
-from typing import Optional
+import threading
+from contextlib import contextmanager
+from typing import Iterator, Optional
 
 from ..models import FreezerItem, FreezerItemCreate
 from .inventory import _ITEM_COLUMNS, _new_id  # reuse column list + id scheme
@@ -43,13 +48,60 @@ def _dsn() -> str:
     return os.environ["DATABASE_URL"]
 
 
-def _connect():
-    import psycopg
-    from psycopg.rows import dict_row
+_pools: dict = {}          # DSN -> ConnectionPool
+_schema_ready: set[str] = set()
+_lock = threading.Lock()
 
-    conn = psycopg.connect(_dsn(), row_factory=dict_row, autocommit=True)
+
+def _pool():
+    dsn = _dsn()
+    pool = _pools.get(dsn)
+    if pool is None:
+        with _lock:
+            pool = _pools.get(dsn)
+            if pool is None:
+                from psycopg.rows import dict_row
+                from psycopg_pool import ConnectionPool
+
+                pool = ConnectionPool(
+                    dsn,
+                    min_size=1,
+                    max_size=5,
+                    # no server-side prepared statements: they break behind
+                    # Supabase's transaction pooler (port 6543)
+                    kwargs={"autocommit": True, "row_factory": dict_row, "prepare_threshold": None},
+                    # replace connections the server dropped while idle
+                    check=ConnectionPool.check_connection,
+                    open=True,
+                    name="shikaar",
+                )
+                _pools[dsn] = pool
+    return pool
+
+
+def _init_schema(conn) -> None:
     conn.execute(_CREATE_SQL)
-    return conn
+
+
+@contextmanager
+def _connect() -> Iterator:
+    """A pooled connection (returned to the pool on exit)."""
+    dsn = _dsn()
+    with _pool().connection() as conn:
+        if dsn not in _schema_ready:
+            _init_schema(conn)
+            _schema_ready.add(dsn)
+        yield conn
+
+
+@atexit.register
+def _close_pools() -> None:
+    for pool in list(_pools.values()):
+        try:
+            pool.close()
+        except Exception:
+            pass
+    _pools.clear()
 
 
 def _row_to_item(r: dict) -> FreezerItem:

@@ -3,19 +3,32 @@
 import { Fragment, useState } from "react";
 import { api } from "@/lib/api";
 import { pretty } from "@/lib/format";
-import type { FreezerItemRead, Meal, MealPlanResponse } from "@/lib/types";
+import type { AskResponse, FreezerItemRead, Meal, MealPlanResponse } from "@/lib/types";
 
-export default function AskShikaar({ items }: { items: FreezerItemRead[] }) {
+/** `onCooked(message, snapshots)` shows a toast whose Undo restores the
+ *  snapshots; `onChanged` refreshes the freezer. */
+export type CookedHandler = (message: string, snapshots?: FreezerItemRead[]) => void;
+
+export default function AskShikaar({
+  items,
+  onCooked,
+  onChanged,
+}: {
+  items: FreezerItemRead[];
+  onCooked?: CookedHandler;
+  onChanged?: () => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<MealPlanResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [request, setRequest] = useState("");
   const hasItems = items.length > 0;
 
   const plan_ = async () => {
     setBusy(true);
     setErr(null);
     try {
-      setRes(await api.mealPlan());
+      setRes(await api.mealPlan(request.trim() || undefined));
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Couldn't reach the planner just now.");
     } finally {
@@ -39,6 +52,17 @@ export default function AskShikaar({ items }: { items: FreezerItemRead[] }) {
         Shikaar reads your manifest, leads with whatever's aging out, and only reaches for TBGH
         recipes that fit the cuts you actually have — plus a creative riff or two.
       </p>
+      <div className="field" style={{ marginBottom: 10 }}>
+        <label>Any requests? (optional)</label>
+        <input
+          value={request}
+          onChange={(e) => setRequest(e.target.value)}
+          placeholder="spicy, feeds 6, quick weeknight…"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && hasItems && !busy) plan_();
+          }}
+        />
+      </div>
       <button className="btn-ask" onClick={plan_} disabled={busy || !hasItems}>
         {busy ? <span className="spinner" /> : null}
         {hasItems ? (busy ? "Planning…" : "Plan my week") : "Add items to plan"}
@@ -48,17 +72,138 @@ export default function AskShikaar({ items }: { items: FreezerItemRead[] }) {
       {res?.meals?.length ? (
         <div className="meals fade">
           {res.meals.map((m, i) => (
-            <MealCard key={`${m.title}-${i}`} n={i + 1} meal={m} byId={byId} />
+            <MealCard
+              key={`${m.title}-${i}`}
+              n={i + 1}
+              meal={m}
+              byId={byId}
+              live={items}
+              onCooked={onCooked}
+              onChanged={onChanged}
+            />
           ))}
           <div className="sig">— Shikaar · planned around your oldest cuts</div>
+        </div>
+      ) : null}
+
+      <AskAnything />
+    </div>
+  );
+}
+
+/** Free-form question box: "how long do I sous vide elk backstrap?" */
+function AskAnything() {
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<AskResponse | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const ask = async () => {
+    if (!q.trim()) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      setRes(await api.ask(q.trim()));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't reach Shikaar just now.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="ask-any">
+      <div className="ask-any-h">Ask Shikaar anything</div>
+      <div className="ask-any-row">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="How long do I sous vide elk backstrap?"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !busy) ask();
+          }}
+        />
+        <button className="btn-ask" onClick={ask} disabled={busy || !q.trim()}>
+          {busy ? <span className="spinner" /> : null}
+          Ask
+        </button>
+      </div>
+      {err ? <div className="banner-err">{err}</div> : null}
+      {res ? (
+        <div className="answer-card fade">
+          <RecipeText text={res.answer} title="" />
+          {res.sources.length ? (
+            <div className="ask-src">From our recipes: {res.sources.map((s) => s.title).join(" · ")}</div>
+          ) : null}
         </div>
       ) : null}
     </div>
   );
 }
 
-function MealCard({ n, meal, byId }: { n: number; meal: Meal; byId: Map<string, FreezerItemRead> }) {
+function MealCard({
+  n,
+  meal,
+  byId,
+  live,
+  onCooked,
+  onChanged,
+}: {
+  n: number;
+  meal: Meal;
+  byId: Map<string, FreezerItemRead>;
+  live: FreezerItemRead[];
+  onCooked?: CookedHandler;
+  onChanged?: () => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [cooking, setCooking] = useState(false);
+  const [cooked, setCooked] = useState(false);
+
+  // Pull this meal's packs out of the freezer. Countable items (packs or pkgs)
+  // drop by the meal's pack count (1 if it didn't say). Items logged as one
+  // bulk weight are left for the user to adjust, and items that are gone are
+  // skipped; the toast says which.
+  const cook = async () => {
+    setCooking(true);
+    const want = new Map<string, number>();
+    for (const u of meal.uses) want.set(u.item_id, (want.get(u.item_id) ?? 0) + (u.packs && u.packs > 0 ? u.packs : 1));
+    const liveById = new Map(live.map((i) => [i.id, i]));
+    const snapshots: FreezerItemRead[] = [];
+    const used: string[] = [];
+    const missing: string[] = [];
+    const byHand: string[] = [];
+    let failed = false;
+    for (const [id, count] of Array.from(want)) {
+      const it = liveById.get(id);
+      const name = (it ?? byId.get(id)) ? labelOf((it ?? byId.get(id))!) : "a freezer item";
+      if (!it) {
+        missing.push(name);
+        continue;
+      }
+      if (!(it.packs && it.pack_size) && it.unit !== "pkgs") {
+        byHand.push(name);
+        continue;
+      }
+      try {
+        await api.use(id, count);
+        snapshots.push(it);
+        used.push(`${count} ${name}`);
+      } catch {
+        failed = true;
+        missing.push(name);
+      }
+    }
+    setCooking(false);
+    if (snapshots.length) setCooked(true);
+    const parts = [
+      used.length ? `Cooked: used ${used.join(", ")}` : "Nothing taken out",
+      missing.length ? `${failed ? "couldn't update" : "no longer in the freezer"}: ${missing.join(", ")}` : "",
+      byHand.length ? `logged by weight, adjust by hand: ${byHand.join(", ")}` : "",
+    ].filter(Boolean);
+    onCooked?.(parts.join(" · "), snapshots);
+    onChanged?.();
+  };
   const meta = [meal.time, meal.serves ? `serves ${meal.serves}` : null].filter(Boolean).join(" · ");
 
   return (
@@ -90,9 +235,19 @@ function MealCard({ n, meal, byId }: { n: number; meal: Meal; byId: Map<string, 
         </div>
       ) : null}
 
-      <button className="meal-toggle" onClick={() => setOpen((o) => !o)}>
-        {open ? "Hide recipe" : "Show recipe"}
-      </button>
+      <div className="meal-actions">
+        <button className="meal-toggle" onClick={() => setOpen((o) => !o)}>
+          {open ? "Hide recipe" : "Show recipe"}
+        </button>
+        {cooked ? (
+          <span className="meal-cooked">Cooked ✓</span>
+        ) : onCooked ? (
+          <button className="meal-cook" onClick={cook} disabled={cooking}>
+            {cooking ? <span className="spinner" /> : null}
+            Cook this
+          </button>
+        ) : null}
+      </div>
 
       {open ? (
         meal.recipe ? (
@@ -116,6 +271,10 @@ function MealCard({ n, meal, byId }: { n: number; meal: Meal; byId: Map<string, 
       ) : null}
     </div>
   );
+}
+
+function labelOf(i: FreezerItemRead) {
+  return `${pretty(i.species)} ${pretty(i.cut).toLowerCase()}`;
 }
 
 /** Renders a recipe's markdown-ish text safely: headings, list lines, and

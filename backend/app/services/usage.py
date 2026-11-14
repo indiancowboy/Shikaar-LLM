@@ -27,6 +27,16 @@ _PG_TABLE = """CREATE TABLE IF NOT EXISTS ai_usage (
     PRIMARY KEY (owner_id, day))"""
 
 
+_pg_table_ready: set[str] = set()  # DSNs whose ai_usage table exists
+
+
+def _ensure_pg_table(conn) -> None:
+    dsn = os.environ.get("DATABASE_URL", "")
+    if dsn not in _pg_table_ready:
+        conn.execute(_PG_TABLE)
+        _pg_table_ready.add(dsn)
+
+
 def daily_limit() -> int:
     try:
         return int(os.environ.get("AI_DAILY_LIMIT", DEFAULT_LIMIT))
@@ -44,7 +54,7 @@ def _increment(owner_id: str, day: str) -> int:
         from . import inventory_pg
 
         with inventory_pg._connect() as conn:
-            conn.execute(_PG_TABLE)
+            _ensure_pg_table(conn)
             row = conn.execute(
                 "INSERT INTO ai_usage (owner_id, day, count) VALUES (%s, %s, 1) "
                 "ON CONFLICT (owner_id, day) DO UPDATE SET count = ai_usage.count + 1 "
@@ -86,7 +96,7 @@ def reset() -> None:
         from . import inventory_pg
 
         with inventory_pg._connect() as conn:
-            conn.execute(_PG_TABLE)
+            _ensure_pg_table(conn)
             conn.execute("DELETE FROM ai_usage")
         return
     with inventory._conn() as con:
