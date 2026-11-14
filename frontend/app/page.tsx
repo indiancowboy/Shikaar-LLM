@@ -146,7 +146,7 @@ function FreezerHub() {
       <InventoryList items={items} onRemove={remove} onUse={use} onEdit={edit} />
       {items.length ? <ClearFreezer count={items.length} onClear={clearAll} /> : null}
 
-      <AskShikaar items={items} />
+      <AskShikaar items={items} onCooked={notify} onChanged={refresh} />
 
       <TbghCredit />
 

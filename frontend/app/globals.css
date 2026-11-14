@@ -294,3 +294,11 @@ input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; m
 .toast button:hover { color: #e8923a; }
 .toast .toast-x { color: var(--muted); }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* Cook this on meal cards */
+.meal-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.meal-actions .meal-toggle { margin-top: 0; }
+.meal-cook { background: var(--ember); color: #13171b; font-family: var(--f-mono); font-size: 10px; letter-spacing: .12em; padding: 8px 12px; display: inline-flex; align-items: center; gap: 6px; }
+.meal-cook:hover { background: #e8923a; }
+.meal-cook:disabled { background: var(--steel); cursor: wait; }
+.meal-cooked { font-family: var(--f-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--prime, #7fb069); }

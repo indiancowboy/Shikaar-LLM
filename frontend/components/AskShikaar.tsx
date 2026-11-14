@@ -5,7 +5,19 @@ import { api } from "@/lib/api";
 import { pretty } from "@/lib/format";
 import type { AskResponse, FreezerItemRead, Meal, MealPlanResponse } from "@/lib/types";
 
-export default function AskShikaar({ items }: { items: FreezerItemRead[] }) {
+/** `onCooked(message, snapshots)` shows a toast whose Undo restores the
+ *  snapshots; `onChanged` refreshes the freezer. */
+export type CookedHandler = (message: string, snapshots?: FreezerItemRead[]) => void;
+
+export default function AskShikaar({
+  items,
+  onCooked,
+  onChanged,
+}: {
+  items: FreezerItemRead[];
+  onCooked?: CookedHandler;
+  onChanged?: () => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<MealPlanResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -60,7 +72,15 @@ export default function AskShikaar({ items }: { items: FreezerItemRead[] }) {
       {res?.meals?.length ? (
         <div className="meals fade">
           {res.meals.map((m, i) => (
-            <MealCard key={`${m.title}-${i}`} n={i + 1} meal={m} byId={byId} />
+            <MealCard
+              key={`${m.title}-${i}`}
+              n={i + 1}
+              meal={m}
+              byId={byId}
+              live={items}
+              onCooked={onCooked}
+              onChanged={onChanged}
+            />
           ))}
           <div className="sig">— Shikaar · planned around your oldest cuts</div>
         </div>
@@ -121,8 +141,69 @@ function AskAnything() {
   );
 }
 
-function MealCard({ n, meal, byId }: { n: number; meal: Meal; byId: Map<string, FreezerItemRead> }) {
+function MealCard({
+  n,
+  meal,
+  byId,
+  live,
+  onCooked,
+  onChanged,
+}: {
+  n: number;
+  meal: Meal;
+  byId: Map<string, FreezerItemRead>;
+  live: FreezerItemRead[];
+  onCooked?: CookedHandler;
+  onChanged?: () => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [cooking, setCooking] = useState(false);
+  const [cooked, setCooked] = useState(false);
+
+  // Pull this meal's packs out of the freezer. Countable items (packs or pkgs)
+  // drop by the meal's pack count (1 if it didn't say). Items logged as one
+  // bulk weight are left for the user to adjust, and items that are gone are
+  // skipped; the toast says which.
+  const cook = async () => {
+    setCooking(true);
+    const want = new Map<string, number>();
+    for (const u of meal.uses) want.set(u.item_id, (want.get(u.item_id) ?? 0) + (u.packs && u.packs > 0 ? u.packs : 1));
+    const liveById = new Map(live.map((i) => [i.id, i]));
+    const snapshots: FreezerItemRead[] = [];
+    const used: string[] = [];
+    const missing: string[] = [];
+    const byHand: string[] = [];
+    let failed = false;
+    for (const [id, count] of Array.from(want)) {
+      const it = liveById.get(id);
+      const name = (it ?? byId.get(id)) ? labelOf((it ?? byId.get(id))!) : "a freezer item";
+      if (!it) {
+        missing.push(name);
+        continue;
+      }
+      if (!(it.packs && it.pack_size) && it.unit !== "pkgs") {
+        byHand.push(name);
+        continue;
+      }
+      try {
+        await api.use(id, count);
+        snapshots.push(it);
+        used.push(`${count} ${name}`);
+      } catch {
+        failed = true;
+        missing.push(name);
+      }
+    }
+    setCooking(false);
+    if (snapshots.length) setCooked(true);
+    const parts = [
+      used.length ? `Cooked: used ${used.join(", ")}` : "Nothing taken out",
+      missing.length ? `${failed ? "couldn't update" : "no longer in the freezer"}: ${missing.join(", ")}` : "",
+      byHand.length ? `logged by weight, adjust by hand: ${byHand.join(", ")}` : "",
+    ].filter(Boolean);
+    onCooked?.(parts.join(" · "), snapshots);
+    onChanged?.();
+  };
   const meta = [meal.time, meal.serves ? `serves ${meal.serves}` : null].filter(Boolean).join(" · ");
 
   return (
@@ -154,9 +235,19 @@ function MealCard({ n, meal, byId }: { n: number; meal: Meal; byId: Map<string, 
         </div>
       ) : null}
 
-      <button className="meal-toggle" onClick={() => setOpen((o) => !o)}>
-        {open ? "Hide recipe" : "Show recipe"}
-      </button>
+      <div className="meal-actions">
+        <button className="meal-toggle" onClick={() => setOpen((o) => !o)}>
+          {open ? "Hide recipe" : "Show recipe"}
+        </button>
+        {cooked ? (
+          <span className="meal-cooked">Cooked ✓</span>
+        ) : onCooked ? (
+          <button className="meal-cook" onClick={cook} disabled={cooking}>
+            {cooking ? <span className="spinner" /> : null}
+            Cook this
+          </button>
+        ) : null}
+      </div>
 
       {open ? (
         meal.recipe ? (
@@ -180,6 +271,10 @@ function MealCard({ n, meal, byId }: { n: number; meal: Meal; byId: Map<string, 
       ) : null}
     </div>
   );
+}
+
+function labelOf(i: FreezerItemRead) {
+  return `${pretty(i.species)} ${pretty(i.cut).toLowerCase()}`;
 }
 
 /** Renders a recipe's markdown-ish text safely: headings, list lines, and
