@@ -20,6 +20,7 @@ PyJWT[crypto]==2.9.0
 
 # Durable inventory store in accounts mode (Supabase / any Postgres)
 psycopg[binary]==3.2.3
+psycopg-pool==3.2.4
 
 # Text Processing
 markdown==3.7

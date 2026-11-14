@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AddToFreezer from "@/components/AddToFreezer";
 import AskShikaar from "@/components/AskShikaar";
 import { ShikaarLogo, TbghCredit } from "@/components/Brand";
 import Gate from "@/components/Gate";
 import { ClearFreezer, CookFirst, InventoryList, StatStrip } from "@/components/Inventory";
 import { api } from "@/lib/api";
+import { freezerCacheKey, readFreezerCache, writeFreezerCache } from "@/lib/freezerCache";
 import type { CookFirstResponse, FreezerItemCreate, FreezerItemRead } from "@/lib/types";
 
 export default function Page() {
@@ -23,24 +24,42 @@ function FreezerHub() {
   const [items, setItems] = useState<FreezerItemRead[]>([]);
   const [cookFirst, setCookFirst] = useState<CookFirstResponse | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
+  const cacheKey = useRef<Promise<string> | null>(null);
 
   const refresh = useCallback(async () => {
+    setUpdating(true);
     try {
       const [list, cf] = await Promise.all([api.list(), api.cookFirst()]);
       setItems(list);
       setCookFirst(cf);
       setLoadErr(null);
+      writeFreezerCache(await (cacheKey.current ??= freezerCacheKey()), { items: list, cookFirst: cf });
     } catch (e) {
       setLoadErr(
         e instanceof Error
           ? `Can't reach the backend (${e.message}). Is the API running at ${process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000"}?`
           : "Can't reach the backend.",
       );
+    } finally {
+      setUpdating(false);
     }
   }, []);
 
   useEffect(() => {
+    // Show the last-loaded freezer straight away, then refresh it.
+    let alive = true;
+    (cacheKey.current ??= freezerCacheKey()).then((key) => {
+      const cached = readFreezerCache(key);
+      if (alive && cached) {
+        setItems((cur) => (cur.length ? cur : cached.items));
+        setCookFirst((cur) => cur ?? cached.cookFirst);
+      }
+    });
     refresh();
+    return () => {
+      alive = false;
+    };
   }, [refresh]);
 
   const remove = async (id: string) => {
@@ -81,13 +100,19 @@ function FreezerHub() {
 
       <CookFirst data={cookFirst} />
 
-      <div className="eyebrow">In the freezer</div>
+      <div className="eyebrow">
+        In the freezer{updating && items.length ? <span className="updating">updating…</span> : null}
+      </div>
       <InventoryList items={items} onRemove={remove} onUse={use} onEdit={edit} />
       {items.length ? <ClearFreezer count={items.length} onClear={clearAll} /> : null}
 
       <AskShikaar items={items} />
 
       <TbghCredit />
+
+      <div className="feedback">
+        <a href="mailto:info@twobrownguyshunt.com?subject=Shikaar%20feedback">Send feedback</a>
+      </div>
 
       <footer>
         SPECIES-AWARE SHELF LIFE · RAG MEAL PLANNING · TBGH

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ShikaarLogo, TbghCredit } from "@/components/Brand";
 import { api } from "@/lib/api";
+import { clearFreezerCaches } from "@/lib/freezerCache";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 
 /** Entry gate. In accounts mode (Supabase configured) it requires real sign-in;
@@ -62,6 +63,7 @@ function AccountGate({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    clearFreezerCaches(); // don't leave this freezer on a shared device
     await getSupabase()?.auth.signOut();
   };
 

@@ -259,3 +259,8 @@ input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; m
 /* editing a freezer item in place */
 .item-edit { margin-bottom: 9px; }
 .item-edit .cand-edit { margin-bottom: 0; }
+
+/* background refresh hint + feedback link */
+.updating { font-family: var(--f-mono); font-size: 9px; letter-spacing: .12em; color: var(--steel); text-transform: lowercase; margin-left: 10px; }
+.feedback { text-align: center; margin-top: 18px; }
+.feedback a { font-family: var(--f-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ember); text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 2px; }
