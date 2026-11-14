@@ -13,7 +13,7 @@ export interface ToastData {
 export default function Toast({
   toast,
   onClose,
-  ms = 6000,
+  ms,
 }: {
   toast: ToastData | null;
   onClose: () => void;
@@ -21,7 +21,8 @@ export default function Toast({
 }) {
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(onClose, ms);
+    // Longer messages (e.g. what "Cook this" took out) stay up a bit longer.
+    const t = setTimeout(onClose, ms ?? (toast.message.length > 70 ? 10000 : 6000));
     return () => clearTimeout(t);
   }, [toast, onClose, ms]);
 

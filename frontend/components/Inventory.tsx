@@ -7,20 +7,27 @@ import {
   GROUP_LABEL,
   GROUP_ORDER,
   pretty,
+  resolveSpecies,
   STATUS_FILL,
 } from "@/lib/format";
 import type { CookFirstResponse, FreezerItemCreate, FreezerItemRead, SpeciesResponse } from "@/lib/types";
 
 const OTHER = "Other";
 
-/** Species key → catalog group ("Big game", "Waterfowl"…); "Other" if unlisted. */
+/** Catalog entry for a saved species (its key, or a name/alias like "mallard"). */
+function entryOf(catalog: SpeciesResponse | null, species: string) {
+  if (!catalog) return null;
+  return catalog.species.find((s) => s.key === species) ?? resolveSpecies(catalog.species, species.replace(/_/g, " "));
+}
+
+/** Species → catalog group ("Big game", "Waterfowl"…); "Other" if unlisted. */
 function groupOf(catalog: SpeciesResponse | null, species: string): string {
-  return catalog?.species.find((s) => s.key === species)?.group ?? OTHER;
+  return entryOf(catalog, species)?.group ?? OTHER;
 }
 
 /** Everything the search box looks at, lowercased. */
 function haystack(catalog: SpeciesResponse | null, i: FreezerItemRead): string {
-  const label = catalog?.species.find((s) => s.key === i.species)?.label ?? "";
+  const label = entryOf(catalog, i.species)?.label ?? "";
   return [pretty(i.species), label, i.species, i.cut, i.harvest_location ?? "", i.notes ?? ""]
     .join(" ")
     .toLowerCase();
