@@ -2,23 +2,31 @@
 
 import { useState } from "react";
 import SpeciesPicker from "@/components/SpeciesPicker";
-import { CAT_LABEL, pretty, resolveSpecies, speciesKey } from "@/lib/format";
+import { CAT_LABEL, pretty, resolveSpecies, speciesKey, todayISO } from "@/lib/format";
 import type { Category, ParseCandidate, SpeciesResponse, Storage, Unit } from "@/lib/types";
 
 const CATEGORY_KEYS = Object.keys(CAT_LABEL) as Category[];
 
-/** Inline editor for one parsed entry before it's added. Same fields and pack
- *  math as manual entry: with packs, the amount is the size of one pack. */
+export type EditableEntry = ParseCandidate & { date_frozen?: string };
+
+/** Inline editor for one entry: a parsed entry before it's added, or (with
+ *  `withDate`) an item already in the freezer. Same fields and pack math as
+ *  manual entry: with packs, the amount is the size of one pack. `onSave` may
+ *  be async; a thrown error is shown in the editor. */
 export default function CandidateEditor({
   candidate,
   catalog,
   onSave,
   onCancel,
+  withDate = false,
+  saveLabel = "Done",
 }: {
-  candidate: ParseCandidate;
+  candidate: EditableEntry;
   catalog: SpeciesResponse | null;
-  onSave: (c: ParseCandidate) => void;
+  onSave: (c: EditableEntry) => void | Promise<void>;
   onCancel: () => void;
+  withDate?: boolean;
+  saveLabel?: string;
 }) {
   const c = candidate;
   const [speciesText, setSpeciesText] = useState(c.species_unknown ? "" : pretty(c.species));
@@ -28,19 +36,25 @@ export default function CandidateEditor({
   const [amount, setAmount] = useState(String(c.packs && c.pack_size ? c.pack_size : c.qty));
   const [unit, setUnit] = useState<Unit>(c.unit);
   const [storage, setStorage] = useState<Storage>(c.storage);
+  const [date, setDate] = useState(c.date_frozen ?? todayISO());
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const known = resolveSpecies(catalog?.species ?? [], speciesText);
   const packCount = parseInt(packs, 10) > 0 ? parseInt(packs, 10) : null;
 
-  const save = () => {
+  const save = async () => {
     const category = known?.category ?? pickedCat;
     const n = parseFloat(amount);
     if (!speciesText.trim()) return setErr("Pick the animal.");
     if (!category) return setErr("Pick a category for this species.");
     if (!(n > 0)) return setErr(packCount ? "Enter the size of one pack." : "Enter a quantity.");
     if (packCount && unit === "pkgs") return setErr("For packs, give the size of one pack in lbs or kg.");
-    onSave({
+    if (withDate && !date) return setErr("Pick the date it was frozen.");
+    setErr(null);
+    setBusy(true);
+    try {
+      await onSave({
       ...c,
       species: known ? known.key : speciesKey(speciesText),
       category,
@@ -51,7 +65,13 @@ export default function CandidateEditor({
       packs: packCount,
       pack_size: packCount ? n : null,
       species_unknown: false,
-    });
+      ...(withDate ? { date_frozen: date } : {}),
+      });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't save that.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -101,6 +121,12 @@ export default function CandidateEditor({
             <option value="pkgs">pkgs</option>
           </select>
         </div>
+        {withDate ? (
+          <div className="field">
+            <label>Date frozen</label>
+            <input type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value)} />
+          </div>
+        ) : null}
         <div className="field">
           <label>Storage</label>
           <select value={storage} onChange={(e) => setStorage(e.target.value as Storage)}>
@@ -114,8 +140,9 @@ export default function CandidateEditor({
         <button className="btn-ghost" type="button" onClick={onCancel}>
           Cancel
         </button>
-        <button className="btn-log" type="button" onClick={save}>
-          Done
+        <button className="btn-log" type="button" onClick={save} disabled={busy}>
+          {busy ? <span className="spinner" /> : null}
+          {saveLabel}
         </button>
       </div>
     </div>

@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import CandidateEditor, { type EditableEntry } from "@/components/CandidateEditor";
+import { useSpeciesCatalog } from "@/lib/useSpeciesCatalog";
 import {
   GROUP_LABEL,
   GROUP_ORDER,
   pretty,
   STATUS_FILL,
 } from "@/lib/format";
-import type { CookFirstResponse, FreezerItemRead } from "@/lib/types";
+import type { CookFirstResponse, FreezerItemCreate, FreezerItemRead } from "@/lib/types";
+
+export type EditItem = (id: string, patch: Partial<FreezerItemCreate>) => Promise<void>;
 
 export function StatStrip({ items }: { items: FreezerItemRead[] }) {
   const lbs = items.filter((i) => i.unit === "lbs").reduce((a, i) => a + i.qty, 0);
@@ -64,11 +68,44 @@ function Item({
   item,
   onRemove,
   onUse,
+  onEdit,
 }: {
   item: FreezerItemRead;
   onRemove: (id: string) => void;
   onUse: (id: string) => void;
+  onEdit: EditItem;
 }) {
+  const [editing, setEditing] = useState(false);
+  const catalog = useSpeciesCatalog();
+
+  if (editing) {
+    const entry: EditableEntry = {
+      species: item.species, category: item.category, cut: item.cut, qty: item.qty,
+      unit: item.unit, storage: item.storage, packs: item.packs ?? null,
+      pack_size: item.pack_size ?? null, parsed_offline: false, species_unknown: false,
+      date_frozen: item.date_frozen,
+    };
+    return (
+      <div className="item-edit">
+        <CandidateEditor
+          candidate={entry}
+          catalog={catalog}
+          withDate
+          saveLabel="Save"
+          onCancel={() => setEditing(false)}
+          onSave={async (c) => {
+            await onEdit(item.id, {
+              species: c.species, category: c.category, cut: c.cut, qty: c.qty, unit: c.unit,
+              storage: c.storage, packs: c.packs ?? null, pack_size: c.pack_size ?? null,
+              date_frozen: c.date_frozen,
+            });
+            setEditing(false);
+          }}
+        />
+      </div>
+    );
+  }
+
   const fill = STATUS_FILL[item.status];
   const pctW = Math.min(item.pct * 100, 100);
   const packed = !!(item.packs && item.pack_size);
@@ -122,6 +159,9 @@ function Item({
               Used 1
             </button>
           ) : null}
+          <button className="del" onClick={() => setEditing(true)}>
+            Edit
+          </button>
           <button className="del" onClick={() => onRemove(item.id)}>
             Remove
           </button>
@@ -180,10 +220,12 @@ export function InventoryList({
   items,
   onRemove,
   onUse,
+  onEdit,
 }: {
   items: FreezerItemRead[];
   onRemove: (id: string) => void;
   onUse: (id: string) => void;
+  onEdit: EditItem;
 }) {
   if (!items.length) {
     return (
@@ -206,7 +248,7 @@ export function InventoryList({
         <div key={g.status}>
           <div className="group-head">{GROUP_LABEL[g.status]}</div>
           {g.items.map((item) => (
-            <Item key={item.id} item={item} onRemove={onRemove} onUse={onUse} />
+            <Item key={item.id} item={item} onRemove={onRemove} onUse={onUse} onEdit={onEdit} />
           ))}
         </div>
       ))}

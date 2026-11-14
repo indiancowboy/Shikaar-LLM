@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { shrinkImage } from "@/lib/image";
+import { useSpeciesCatalog } from "@/lib/useSpeciesCatalog";
 import CandidateEditor from "@/components/CandidateEditor";
 import SpeciesPicker from "@/components/SpeciesPicker";
 import { amountLabel, CAT_LABEL, pretty, resolveSpecies, speciesKey, todayISO } from "@/lib/format";
@@ -29,11 +30,7 @@ export default function AddToFreezer({ onChanged }: { onChanged: () => void }) {
   const [whichText, setWhichText] = useState("");
   const [whichCat, setWhichCat] = useState<Category | "">("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const [catalog, setCatalog] = useState<SpeciesResponse | null>(null);
-
-  useEffect(() => {
-    api.species().then(setCatalog).catch(() => setCatalog(null));
-  }, []);
+  const catalog = useSpeciesCatalog();
 
   async function run(fn: () => Promise<void>) {
     setBusy(true);

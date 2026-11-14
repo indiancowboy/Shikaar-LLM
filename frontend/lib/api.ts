@@ -125,6 +125,14 @@ export const api = {
 
   species: () => rawFetch("/species").then(asJson<SpeciesResponse>),
 
+  // Edit a saved item (server re-validates; pack total is recomputed).
+  update: (id: string, patch: Partial<FreezerItemCreate>) =>
+    rawFetch(`/freezer/${id}`, {
+      method: "PATCH",
+      headers: jsonHeaders,
+      body: JSON.stringify(patch),
+    }).then(asJson<FreezerItemRead>),
+
   // Empty the signed-in user's freezer (only their own items).
   clear: () => rawFetch("/freezer", { method: "DELETE" }).then(asJson<{ removed: number }>),
 
