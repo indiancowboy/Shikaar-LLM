@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import AddToFreezer from "@/components/AddToFreezer";
 import AskShikaar from "@/components/AskShikaar";
+import BuckLoader from "@/components/BuckLoader";
 import { ShikaarLogo, TbghCredit } from "@/components/Brand";
 import Gate from "@/components/Gate";
 import Toast, { type ToastData } from "@/components/Toast";
@@ -28,6 +29,10 @@ function FreezerHub() {
   const [cookFirst, setCookFirst] = useState<CookFirstResponse | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  // False until we have a freezer to show (from the cache or the server).
+  const [loaded, setLoaded] = useState(false);
+  // The free server can take up to a minute to wake; say so if it's slow.
+  const [slow, setSlow] = useState(false);
   const cacheKey = useRef<Promise<string> | null>(null);
   const [toast, setToast] = useState<ToastData | null>(null);
   const closeToast = useCallback(() => setToast(null), []);
@@ -39,6 +44,7 @@ function FreezerHub() {
       setItems(list);
       setCookFirst(cf);
       setLoadErr(null);
+      setLoaded(true);
       writeFreezerCache(await (cacheKey.current ??= freezerCacheKey()), { items: list, cookFirst: cf });
     } catch (e) {
       setLoadErr(
@@ -59,11 +65,14 @@ function FreezerHub() {
       if (alive && cached) {
         setItems((cur) => (cur.length ? cur : cached.items));
         setCookFirst((cur) => cur ?? cached.cookFirst);
+        setLoaded(true);
       }
     });
     refresh();
+    const t = setTimeout(() => alive && setSlow(true), 6000);
     return () => {
       alive = false;
+      clearTimeout(t);
     };
   }, [refresh]);
 
@@ -141,9 +150,29 @@ function FreezerHub() {
       <CookFirst data={cookFirst} />
 
       <div className="eyebrow">
-        In the freezer{updating && items.length ? <span className="updating">updating…</span> : null}
+        In the freezer
+        {updating && loaded && items.length ? (
+          <span className="updating-buck">
+            <BuckLoader size={34} label="updating…" />
+          </span>
+        ) : null}
       </div>
-      <InventoryList items={items} onRemove={remove} onUse={use} onEdit={edit} />
+      {!loaded && !loadErr ? (
+        <div className="loading-panel">
+          <BuckLoader
+            size={130}
+            label={slow ? undefined : "Tracking down your freezer…"}
+          />
+          {slow ? (
+            <div className="buck-label" style={{ marginTop: 10 }}>
+              Still tracking…
+              <small>The server naps when nobody&apos;s using it. First load can take up to a minute.</small>
+            </div>
+          ) : null}
+        </div>
+      ) : loaded ? (
+        <InventoryList items={items} onRemove={remove} onUse={use} onEdit={edit} />
+      ) : null}
       {items.length ? <ClearFreezer count={items.length} onClear={clearAll} /> : null}
 
       <AskShikaar items={items} onCooked={notify} onChanged={refresh} />

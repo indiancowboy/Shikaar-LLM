@@ -302,3 +302,29 @@ input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; m
 .meal-cook:hover { background: #e8923a; }
 .meal-cook:disabled { background: var(--steel); cursor: wait; }
 .meal-cooked { font-family: var(--f-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--prime, #7fb069); }
+
+/* walking-buck loader */
+.buck-loader { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--sand); }
+.buck { overflow: visible; }
+.buck .fill { fill: currentColor; }
+.buck .eye { fill: var(--ink); }
+.buck .tail-white { fill: none; stroke: var(--frost); stroke-width: 1.4; stroke-linecap: round; }
+.buck .antler { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.buck .leg path { fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.buck .leg-far { opacity: .55; }
+.buck .leg { transform-box: fill-box; transform-origin: 50% 0; animation: buck-step 1s ease-in-out infinite; }
+.buck .leg-b { animation-delay: -.5s; }
+.buck .buck-body { animation: buck-bob .5s ease-in-out infinite; }
+.buck .ground { stroke: var(--steel); stroke-width: 1.5; stroke-dasharray: 10 7; stroke-linecap: round; animation: buck-ground .6s linear infinite; }
+@keyframes buck-step { 0%, 100% { transform: rotate(16deg); } 50% { transform: rotate(-16deg); } }
+@keyframes buck-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.2px); } }
+@keyframes buck-ground { to { stroke-dashoffset: 17; } }
+@media (prefers-reduced-motion: reduce) {
+  .buck .leg, .buck .buck-body, .buck .ground { animation: none; }
+}
+.buck-label { font-family: var(--f-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); text-align: center; line-height: 1.6; }
+.buck-label small { display: block; text-transform: none; letter-spacing: .02em; font-size: 11px; color: var(--steel); }
+.loading-panel { padding: 30px 20px 26px; border: 1px dashed var(--line); border-radius: 3px; }
+.updating-buck { display: inline-flex; vertical-align: middle; margin-left: 8px; }
+.updating-buck .buck-loader { flex-direction: row; gap: 6px; }
+.updating-buck .buck-label { font-size: 9px; color: var(--steel); text-transform: lowercase; }
