@@ -319,6 +319,8 @@ function ManualEntry({ onChanged, catalog }: { onChanged: () => void; catalog: S
   const [unit, setUnit] = useState<Unit>("lbs");
   const [storage, setStorage] = useState<Storage>("vacuum_sealed");
   const [date, setDate] = useState(todayISO());
+  const [location, setLocation] = useState("");
+  const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -358,8 +360,11 @@ function ManualEntry({ onChanged, catalog }: { onChanged: () => void; catalog: S
         date_frozen: date,
         packs: packCount,
         pack_size: packCount ? amount : null,
+        harvest_location: location.trim() || null,
+        notes: notes.trim() || null,
       });
       setCut("");
+      setNotes("");
       setSpeciesText("");
       setPickedCat("");
       setPacks("");
@@ -451,6 +456,14 @@ function ManualEntry({ onChanged, catalog }: { onChanged: () => void; catalog: S
         <div className="field" style={{ gridColumn: "1 / 3" }}>
           <label>Date frozen</label>
           <input type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value)} />
+        </div>
+        <div className="field field-wide">
+          <label>Harvest location (optional)</label>
+          <input value={location} maxLength={120} placeholder="Unit 61, Colorado…" onChange={(e) => setLocation(e.target.value)} />
+        </div>
+        <div className="field field-wide">
+          <label>Notes (optional)</label>
+          <textarea value={notes} rows={2} maxLength={500} placeholder="Opening-day buck, Dad's tag…" onChange={(e) => setNotes(e.target.value)} />
         </div>
         <div className="addbtn">
           {err ? <div className="banner-err" style={{ margin: 0 }}>{err}</div> : null}

@@ -5,9 +5,12 @@ import AddToFreezer from "@/components/AddToFreezer";
 import AskShikaar from "@/components/AskShikaar";
 import { ShikaarLogo, TbghCredit } from "@/components/Brand";
 import Gate from "@/components/Gate";
+import Toast, { type ToastData } from "@/components/Toast";
 import { ClearFreezer, CookFirst, InventoryList, StatStrip } from "@/components/Inventory";
 import { api } from "@/lib/api";
 import { freezerCacheKey, readFreezerCache, writeFreezerCache } from "@/lib/freezerCache";
+import { pretty } from "@/lib/format";
+import { restoreItems } from "@/lib/undo";
 import type { CookFirstResponse, FreezerItemCreate, FreezerItemRead } from "@/lib/types";
 
 export default function Page() {
@@ -26,6 +29,8 @@ function FreezerHub() {
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const cacheKey = useRef<Promise<string> | null>(null);
+  const [toast, setToast] = useState<ToastData | null>(null);
+  const closeToast = useCallback(() => setToast(null), []);
 
   const refresh = useCallback(async () => {
     setUpdating(true);
@@ -62,8 +67,34 @@ function FreezerHub() {
     };
   }, [refresh]);
 
+  // Show a message; with snapshots, its Undo puts those items back as they were.
+  const notify = useCallback(
+    (message: string, snapshots: FreezerItemRead[] = []) => {
+      const onUndo = snapshots.length
+        ? async () => {
+            try {
+              await restoreItems(snapshots);
+            } catch (e) {
+              setToast({ id: Date.now(), message: `Couldn't undo: ${e instanceof Error ? e.message : "try again"}` });
+            }
+            refresh();
+          }
+        : undefined;
+      setToast({ id: Date.now(), message, onUndo });
+    },
+    [refresh],
+  );
+
+  const label = (i: FreezerItemRead) => `${pretty(i.species)} ${pretty(i.cut).toLowerCase()}`;
+
   const remove = async (id: string) => {
-    await api.remove(id);
+    const snap = items.find((i) => i.id === id);
+    try {
+      await api.remove(id);
+      if (snap) notify(`Removed ${label(snap)}`, [snap]);
+    } catch (e) {
+      notify(`Couldn't remove that: ${e instanceof Error ? e.message : "try again"}`);
+    }
     refresh();
   };
 
@@ -79,7 +110,16 @@ function FreezerHub() {
   };
 
   const use = async (id: string) => {
-    await api.use(id);
+    const snap = items.find((i) => i.id === id);
+    try {
+      const res = await api.use(id);
+      if (snap) {
+        const what = snap.packs && snap.pack_size ? "pack" : "pkg";
+        notify(`Used 1 ${what} · ${label(snap)}${res.removed ? " (all gone)" : ""}`, [snap]);
+      }
+    } catch (e) {
+      notify(`Couldn't update that: ${e instanceof Error ? e.message : "try again"}`);
+    }
     refresh();
   };
 
@@ -119,6 +159,8 @@ function FreezerHub() {
         <br />
         Shelf-life estimates are guidance, not gospel — trust your nose.
       </footer>
+
+      <Toast toast={toast} onClose={closeToast} />
     </div>
   );
 }
