@@ -255,3 +255,7 @@ input[type="date"] { -webkit-appearance: none; appearance: none; min-width: 0; m
 .clear-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 .clear-yes { background: var(--past); color: var(--frost); }
 .clear-yes:hover { background: #e0624a; }
+
+/* editing a freezer item in place */
+.item-edit { margin-bottom: 9px; }
+.item-edit .cand-edit { margin-bottom: 0; }

@@ -7,7 +7,7 @@ import { ShikaarLogo, TbghCredit } from "@/components/Brand";
 import Gate from "@/components/Gate";
 import { ClearFreezer, CookFirst, InventoryList, StatStrip } from "@/components/Inventory";
 import { api } from "@/lib/api";
-import type { CookFirstResponse, FreezerItemRead } from "@/lib/types";
+import type { CookFirstResponse, FreezerItemCreate, FreezerItemRead } from "@/lib/types";
 
 export default function Page() {
   // Gate renders FreezerHub only after access is granted, so the data fetch
@@ -53,6 +53,12 @@ function FreezerHub() {
     refresh();
   };
 
+  // Errors bubble up so the card's editor can show them.
+  const edit = async (id: string, patch: Partial<FreezerItemCreate>) => {
+    await api.update(id, patch);
+    refresh();
+  };
+
   const use = async (id: string) => {
     await api.use(id);
     refresh();
@@ -76,7 +82,7 @@ function FreezerHub() {
       <CookFirst data={cookFirst} />
 
       <div className="eyebrow">In the freezer</div>
-      <InventoryList items={items} onRemove={remove} onUse={use} />
+      <InventoryList items={items} onRemove={remove} onUse={use} onEdit={edit} />
       {items.length ? <ClearFreezer count={items.length} onClear={clearAll} /> : null}
 
       <AskShikaar items={items} />
